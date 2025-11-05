@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useToast } from '@/components/Toast'
 import { processPayment, generateOrderId, paymentMethods, createPaymentStatus } from '@/lib/payment'
 
 interface PaymentModalProps {
@@ -16,6 +17,7 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'qr' | 'success'>('select')
   const [paymentData, setPaymentData] = useState<{ qrCode?: string; paymentUrl?: string; transactionId?: string }>({})
+  const { toast } = useToast()
 
   if (!isOpen) return null
 
@@ -43,11 +45,11 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
           setPaymentStep('qr')
         }
       } else {
-        alert('支付初始化失败: ' + response.error)
+        toast('支付初始化失败: ' + (response.error ?? ''), 'error')
         setPaymentStep('select')
       }
     } catch (error) {
-      alert('支付处理出错: ' + error)
+      toast('支付处理出错: ' + String(error ?? ''), 'error')
       setPaymentStep('select')
     } finally {
       setIsProcessing(false)

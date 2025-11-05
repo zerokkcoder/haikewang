@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState, useRef } from 'react'
+import { useToast } from '@/components/Toast'
 import dynamic from 'next/dynamic'
 import MarkdownIt from 'markdown-it'
 import 'react-markdown-editor-lite/lib/index.css'
@@ -53,6 +54,7 @@ function renderMd(md: string) {
 }
 
 export default function AdminResourcesPage() {
+  const { toast } = useToast()
   const MdEditor = useMemo(() => dynamic(() => import('react-markdown-editor-lite'), { ssr: false }), [])
   const mdParser = useMemo(() => new MarkdownIt(), [])
 
@@ -174,7 +176,7 @@ export default function AdminResourcesPage() {
       setModalOpen(false)
       fetchList()
     } else {
-      alert(data.message || '保存失败')
+      toast(data.message || '保存失败', 'error')
     }
   }
 
@@ -279,7 +281,7 @@ export default function AdminResourcesPage() {
                   const file = e.target.files?.[0]
                   if (!file) return
                   const allowed = ['image/png','image/jpeg','image/webp']
-                  if (!allowed.includes(file.type)) { alert('仅支持 png/jpg/webp'); return }
+                  if (!allowed.includes(file.type)) { toast('仅支持 png/jpg/webp', 'error'); return }
                   if (file.size > 2 * 1024 * 1024) {
                     // 简单压缩：使用 canvas 降采样与质量压缩
                     const bitmap = await createImageBitmap(file)
@@ -295,20 +297,20 @@ export default function AdminResourcesPage() {
                     const outType = file.type // 保持原类型
                     const quality = outType === 'image/jpeg' || outType === 'image/webp' ? 0.8 : undefined
                     const blob: Blob | null = await new Promise(resolve => canvas.toBlob(resolve, outType, quality))
-                    if (!blob) { alert('压缩失败'); return }
-                    if (blob.size > 2 * 1024 * 1024) { alert('压缩后仍超过 2MB，请手动压缩'); return }
+                    if (!blob) { toast('压缩失败', 'error'); return }
+                    if (blob.size > 2 * 1024 * 1024) { toast('压缩后仍超过 2MB，请手动压缩', 'error'); return }
                     const fd = new FormData()
                     fd.append('file', new File([blob], file.name.replace(/\.[^.]+$/, '') + (outType === 'image/png' ? '.png' : outType === 'image/webp' ? '.webp' : '.jpg'), { type: outType }))
                     const res = await fetch('/api/upload', { method: 'POST', body: fd })
                     const data = await res.json()
                     if (data?.success && data.url) setCover(data.url)
-                    else alert(data?.message || '上传失败')
+                    else toast(data?.message || '上传失败', 'error')
                   } else {
                     const fd = new FormData(); fd.append('file', file)
                     const res = await fetch('/api/upload', { method: 'POST', body: fd })
                     const data = await res.json()
                     if (data?.success && data.url) setCover(data.url)
-                    else alert(data?.message || '上传失败')
+                    else toast(data?.message || '上传失败', 'error')
                   }
                 }}
               />
@@ -321,8 +323,9 @@ export default function AdminResourcesPage() {
                     const data = await res.json()
                     if (data?.success) {
                       setCover('')
+                      toast('封面已删除', 'success')
                     } else {
-                      alert(data?.message || '删除封面失败')
+                      toast(data?.message || '删除封面失败', 'error')
                     }
                   }}
                 >删除封面</button>

@@ -2,20 +2,23 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { useToast } from '@/components/Toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
 export default function RegisterPage() {
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     username: '',
     email: '',
+    code: '',
     password: '',
-    confirmPassword: '',
-    agree: false
+    confirmPassword: ''
   });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
+  const [sending, setSending] = useState(false);
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -42,9 +45,7 @@ export default function RegisterPage() {
       newErrors.confirmPassword = '两次输入的密码不一致';
     }
     
-    if (!formData.agree) {
-      newErrors.agree = '请同意服务条款';
-    }
+    // 去掉同意条款校验
     
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -58,13 +59,29 @@ export default function RegisterPage() {
     }
     
     setLoading(true);
-    
-    // Simulate registration
-    setTimeout(() => {
-      alert('注册成功！请登录您的账户。');
-      setLoading(false);
-      window.location.href = '/login';
-    }, 2000);
+    try {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          code: formData.code.trim(),
+        })
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast(json?.message || '注册失败', 'error')
+      } else {
+        toast('注册成功！请登录您的账户。', 'success')
+        window.location.href = '/login'
+      }
+    } catch (err) {
+      toast('网络错误，请稍后再试', 'error')
+    } finally {
+      setLoading(false)
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -79,6 +96,97 @@ export default function RegisterPage() {
       setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
+
+  // 失去焦点时检查用户名是否已注册
+  const checkUsername = async () => {
+    const v = formData.username.trim()
+    if (!v) return
+    try {
+      const res = await fetch('/api/auth/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: v })
+      })
+      const json = await res.json().catch(() => null)
+      if (json?.success && json?.data?.usernameTaken === true) {
+        setErrors(prev => ({ ...prev, username: '该用户名已被注册' }))
+      } else {
+        setErrors(prev => ({ ...prev, username: '' }))
+      }
+    } catch {}
+  }
+
+  // 失去焦点时检查邮箱是否已注册
+  const checkEmail = async () => {
+    const v = formData.email.trim()
+    if (!v) return
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) {
+      setErrors(prev => ({ ...prev, email: '请输入有效的邮箱地址' }))
+      return
+    }
+    try {
+      const res = await fetch('/api/auth/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: v })
+      })
+      const json = await res.json().catch(() => null)
+      if (json?.success && json?.data?.emailTaken === true) {
+        setErrors(prev => ({ ...prev, email: '该邮箱已注册' }))
+      } else {
+        setErrors(prev => ({ ...prev, email: '' }))
+      }
+    } catch {}
+  }
+
+  const sendCode = async () => {
+    setErrors(prev => ({ ...prev, code: '' }))
+    if (!formData.email.trim()) {
+      setErrors(prev => ({ ...prev, email: '邮箱不能为空' }))
+      return
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      setErrors(prev => ({ ...prev, email: '请输入有效的邮箱地址' }))
+      return
+    }
+    setSending(true)
+    try {
+      // 先检查邮箱是否已注册
+      const ck = await fetch('/api/auth/check', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.trim() })
+      })
+      const ckj = await ck.json().catch(() => null)
+      if (ckj?.data?.emailTaken) {
+        setErrors(prev => ({ ...prev, email: '该邮箱已注册' }))
+        setSending(false)
+        return
+      }
+      const res = await fetch('/api/auth/send-code', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: formData.email.trim() })
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast(json?.message || '验证码发送失败', 'error')
+      } else {
+        const code = json?.data?.code
+        if (code) {
+          // 开发或未配置邮件：接口返回验证码，便于调试
+          toast(`验证码已发送到邮箱（开发环境直接返回）：${code}`, 'success')
+        } else {
+          // 生产环境：不展示验证码，仅提示已发送
+          toast('验证码已发送到邮箱，请查收', 'success')
+        }
+      }
+    } catch (err) {
+      toast('网络错误，请稍后再试', 'error')
+    } finally {
+      setSending(false)
+    }
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
@@ -104,6 +212,7 @@ export default function RegisterPage() {
                 name="username"
                 value={formData.username}
                 onChange={handleChange}
+                onBlur={checkUsername}
                 className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
                   errors.username ? 'border-red-500' : 'border-border'
                 }`}
@@ -114,25 +223,47 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
-                邮箱地址
-              </label>
-              <input
-                type="email"
-                id="email"
-                name="email"
-                value={formData.email}
-                onChange={handleChange}
-                className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
-                  errors.email ? 'border-red-500' : 'border-border'
-                }`}
-                placeholder="请输入邮箱地址"
-              />
-              {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
-              )}
-            </div>
+      <div>
+        <label htmlFor="email" className="block text-sm font-medium text-foreground mb-2">
+          邮箱地址
+        </label>
+        <input
+          type="email"
+          id="email"
+          name="email"
+          value={formData.email}
+          onChange={handleChange}
+          onBlur={checkEmail}
+          className={`w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${
+            errors.email ? 'border-red-500' : 'border-border'
+          }`}
+          placeholder="请输入邮箱地址"
+        />
+        {errors.email && (
+          <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+        )}
+        <div className="mt-3 flex items-center gap-3">
+          <input
+            type="text"
+            name="code"
+            value={formData.code}
+            onChange={handleChange}
+            className={`flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent ${errors.code ? 'border-red-500' : 'border-border'}`}
+            placeholder="请输入邮箱验证码"
+          />
+          <button
+            type="button"
+            onClick={sendCode}
+            disabled={sending}
+            className="px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary/90 disabled:opacity-50"
+          >
+            {sending ? '发送中...' : '发送验证码'}
+          </button>
+        </div>
+        {errors.code && (
+          <p className="mt-1 text-sm text-red-600">{errors.code}</p>
+        )}
+      </div>
 
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
@@ -200,32 +331,7 @@ export default function RegisterPage() {
               )}
             </div>
 
-            <div>
-              <label className="flex items-center">
-                <input
-                  type="checkbox"
-                  name="agree"
-                  checked={formData.agree}
-                  onChange={handleChange}
-                  className={`h-4 w-4 text-primary focus:ring-primary border rounded ${
-                    errors.agree ? 'border-red-500' : 'border-border'
-                  }`}
-                />
-                <span className="ml-2 text-sm text-muted-foreground">
-                  我同意{' '}
-                  <Link href="/terms" className="text-primary hover:underline">
-                    服务条款
-                  </Link>
-                  {' '}和{' '}
-                  <Link href="/privacy" className="text-primary hover:underline">
-                    隐私政策
-                  </Link>
-                </span>
-              </label>
-              {errors.agree && (
-                <p className="mt-1 text-sm text-red-600">{errors.agree}</p>
-              )}
-            </div>
+            {/* 移除同意条款复选框与文案 */}
 
             <button
               type="submit"

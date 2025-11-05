@@ -4,7 +4,6 @@ import "../globals.css";
 import Header from "@/components/Header";
 import prisma from "@/lib/prisma";
 import Footer from "@/components/Footer";
-import { currentUser } from "@/lib/utils";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -35,7 +34,7 @@ export default async function SiteLayout({ children }: Readonly<{ children: Reac
 
   return (
     <div className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen flex flex-col`}>
-      <Header currentUser={currentUser} initialCategories={initialCategories} />
+      <Header initialCategories={initialCategories} />
       <main className="flex-1">{children}</main>
       <Footer />
     </div>

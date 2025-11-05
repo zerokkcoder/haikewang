@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useToast } from '@/components/Toast';
 import { vipPlans, currentUser } from '@/lib/utils';
 import { CheckIcon, StarIcon } from '@heroicons/react/24/solid';
 import PaymentModal from '@/components/PaymentModal';
@@ -8,6 +9,7 @@ import PaymentModal from '@/components/PaymentModal';
 export default function VIPPage() {
   const [selectedPlan, setSelectedPlan] = useState<string>('');
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const { toast } = useToast();
 
   const handleSubscribe = (planId: string) => {
     setSelectedPlan(planId);
@@ -175,7 +177,7 @@ export default function VIPPage() {
         amount={selectedPlan ? vipPlans.find(p => p.id === selectedPlan)?.price || 0 : 0}
         description={`${selectedPlan ? vipPlans.find(p => p.id === selectedPlan)?.name : ''}会员开通`}
         onPaymentSuccess={(transactionId) => {
-          alert(`支付成功！交易ID: ${transactionId}`);
+          toast(`支付成功！交易ID: ${transactionId}`, 'success');
           // Here you would typically update the user status and redirect
         }}
       />

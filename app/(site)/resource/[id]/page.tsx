@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useToast } from '@/components/Toast';
 import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -16,6 +17,7 @@ import rehypeHighlight from 'rehype-highlight';
 import 'highlight.js/styles/github-dark.css';
 
 export default function ResourceDetailPage() {
+  const { toast } = useToast();
   const params = useParams();
   const resourceId = params.id as string;
   const [resource, setResource] = useState<any>(null);
@@ -132,9 +134,9 @@ export default function ResourceDetailPage() {
 
   const copyExtractionCode = () => {
     navigator.clipboard?.writeText(extractionCode).then(() => {
-      alert('提取码已复制');
+      toast('提取码已复制', 'success');
     }).catch(() => {
-      alert('复制失败，请手动选择提取码复制');
+      toast('复制失败，请手动选择提取码复制', 'error');
     });
   };
 
@@ -158,7 +160,7 @@ export default function ResourceDetailPage() {
       }
 
       // Show restriction message
-      alert(restrictions.reason);
+      toast(restrictions.reason || '无法下载', 'error');
       return;
     }
 
@@ -166,11 +168,11 @@ export default function ResourceDetailPage() {
     const result: DownloadResult = await processDownload(resource, currentUser);
     
     if (result.success) {
-      alert(`${result.message} (交易ID: ${result.transactionId})`);
+      toast(`${result.message} (交易ID: ${result.transactionId})`, 'success');
       // In a real app, you would start the actual download here
       // window.location.href = resource.downloadUrl;
     } else {
-      alert(result.message);
+      toast(result.message || '下载失败', 'error');
     }
   };
 
@@ -509,7 +511,7 @@ export default function ResourceDetailPage() {
               </button>
               <button
                 onClick={() => {
-                  alert('跳转到支付页面...');
+                  toast('跳转到支付页面...', 'info');
                   setShowPaymentModal(false);
                 }}
                 className="flex-1 btn btn-primary"

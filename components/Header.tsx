@@ -19,6 +19,7 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [navCategories, setNavCategories] = useState<NavCategory[]>(initialCategories)
   const [openCategoryId, setOpenCategoryId] = useState<number | null>(null)
+  const [siteUser, setSiteUser] = useState<{ username: string; isVip: boolean } | null>(currentUser ?? null)
   const closeTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -53,6 +54,25 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
     load()
     return () => controller.abort()
   }, [])
+
+  // 前端保存的登录用户（localStorage）优先显示
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('site_user')
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (parsed && typeof parsed.username === 'string') {
+          setSiteUser({ username: parsed.username, isVip: !!parsed.isVip })
+        }
+      }
+    } catch {}
+  }, [])
+
+  const handleLogout = () => {
+    try { window.localStorage.removeItem('site_user') } catch {}
+    setSiteUser(null)
+    setIsUserMenuOpen(false)
+  }
 
   return (
     <header className="bg-background border-b border-border sticky top-0 z-50">
@@ -149,71 +169,59 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
 
           {/* User Menu */}
           <div className="flex items-center space-x-4">
-            <div className="relative">
-              <button
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                className="flex items-center gap-2 text-foreground hover:text-primary"
-              >
-                <UserCircleIcon className="w-6 h-6" />
-                <span className="hidden sm:block text-sm font-medium">
-                  {currentUser?.username || '登录/注册'}
-                </span>
-                {currentUser?.isVip && (
-                  <span className="badge">VIP</span>
-                )}
-              </button>
+            {siteUser ? (
+              <div className="relative">
+                <button
+                  onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                  className="flex items-center gap-2 text-foreground hover:text-primary"
+                >
+                  <UserCircleIcon className="w-6 h-6" />
+                  <span className="hidden sm:block text-sm font-medium">
+                    {siteUser.username}
+                  </span>
+                  {siteUser.isVip && (
+                    <span className="badge">VIP</span>
+                  )}
+                </button>
 
-              {/* User Dropdown */}
-              {isUserMenuOpen && (
-                <div className="absolute top-full right-0 mt-2 w-44 bg-background border border-border rounded-lg z-50">
-                  <div className="py-2">
-                    {currentUser ? (
-                      <>
+                {isUserMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-44 bg-background border border-border rounded-lg z-50">
+                    <div className="py-2">
+                      <Link
+                        href="/profile"
+                        className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
+                      >
+                        个人中心
+                      </Link>
+                      <Link
+                        href="/downloads"
+                        className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
+                      >
+                        下载记录
+                      </Link>
+                      {!siteUser.isVip && (
                         <Link
-                          href="/profile"
+                          href="/vip"
                           className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
                         >
-                          个人中心
+                          升级VIP
                         </Link>
-                        <Link
-                          href="/downloads"
-                          className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
-                        >
-                          下载记录
-                        </Link>
-                        {!currentUser.isVip && (
-                          <Link
-                            href="/vip"
-                            className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
-                          >
-                            升级VIP
-                          </Link>
-                        )}
-                        <hr className="my-2 border-border" />
-                        <button className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-secondary">
-                          退出登录
-                        </button>
-                      </>
-                    ) : (
-                      <>
-                        <Link
-                          href="/login"
-                          className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
-                        >
-                          登录
-                        </Link>
-                        <Link
-                          href="/register"
-                          className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
-                        >
-                          注册
-                        </Link>
-                      </>
-                    )}
+                      )}
+                      <hr className="my-2 border-border" />
+                      <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-secondary">
+                        退出登录
+                      </button>
+                    </div>
                   </div>
-                </div>
-              )}
-            </div>
+                )}
+              </div>
+            ) : (
+              <div className="flex items-center gap-3">
+                <Link href="/login" className="text-sm font-medium text-foreground hover:text-primary">登录</Link>
+                <span className="text-muted-foreground">/</span>
+                <Link href="/register" className="text-sm font-medium text-foreground hover:text-primary">注册</Link>
+              </div>
+            )}
 
             {/* Mobile Menu Button */}
             <button

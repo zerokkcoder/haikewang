@@ -1,10 +1,12 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useToast } from '@/components/Toast'
 
 type TagItem = { id: number; name: string }
 
 export default function AdminTagsPage() {
+  const { toast } = useToast()
   const [list, setList] = useState<TagItem[]>([])
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
@@ -40,7 +42,7 @@ export default function AdminTagsPage() {
       setEditingId(null); setEditName('')
       fetchList()
     } else {
-      alert(data?.message || '更新失败')
+      toast(data?.message || '更新失败', 'error')
     }
   }
 
