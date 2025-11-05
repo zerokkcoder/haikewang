@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import ResourceCard from '@/components/ResourceCard';
-import { resources, currentUser, categories } from '@/lib/utils';
+import { resources, currentUser } from '@/lib/utils';
 import { StarIcon, EyeIcon, ArrowDownTrayIcon, ClockIcon, UserIcon, TagIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { checkDownloadRestrictions, processDownload, DownloadResult, getUserDownloadQuota } from '@/lib/download';
@@ -22,6 +22,7 @@ export default function ResourceDetailPage() {
   const [loading, setLoading] = useState(true);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [prevNext, setPrevNext] = useState<{ prev: { id: number; title: string } | null; next: { id: number; title: string } | null }>({ prev: null, next: null })
 
   useEffect(() => {
     const load = async () => {
@@ -51,6 +52,14 @@ export default function ResourceDetailPage() {
           isVipOnly: false,
         }
         setResource(mapped)
+        // 获取上一篇/下一篇
+        try {
+          const pnRes = await fetch(`/api/resources/prev-next?id=${r.id}`)
+          if (pnRes.ok) {
+            const pn = await pnRes.json()
+            setPrevNext({ prev: pn?.data?.prev || null, next: pn?.data?.next || null })
+          }
+        } catch {}
       } finally {
         setLoading(false)
       }
@@ -79,8 +88,6 @@ export default function ResourceDetailPage() {
     );
   }
 
-  const categoryObj = categories.find(c => c.name === resource.category);
-  const subcategoryObj = categoryObj?.subcategories.find(s => s.name === resource.subcategory);
   const restrictions = checkDownloadRestrictions(resource, currentUser);
   const extractionCode = resource.downloadCode || '';
   const tagColors = ['#1f2937','#374151','#4b5563','#2563eb','#7c3aed','#0f766e','#b91c1c','#6b21a8','#1d4ed8','#15803d'];
@@ -219,7 +226,8 @@ export default function ResourceDetailPage() {
                     h3: ({ children }) => (
                       <h3 className="text-lg md:text-xl font-semibold mt-3 mb-2 text-foreground">{children}</h3>
                     ),
-                    code: ({ inline, className, children, ...props }) => {
+                    // 改为 any 以避免 TS 对 inline 属性报错
+                    code: ({ inline, className, children, ...props }: any) => {
                       const langClass = className || ''
                       if (inline) {
                         return <code className={`hljs ${langClass}`} {...props}>{children}</code>
@@ -302,25 +310,25 @@ export default function ResourceDetailPage() {
             {/* Prev/Next navigation */}
               <div className="py-4 px-2 md:px-4 bg-card rounded-lg shadow-sm">
                 <div className="flex items-center justify-between">
-                  <div className="max-w-[45%]">
-                    <div className="text-xs text-muted-foreground mb-1">上一篇</div>
-                    {prevResource ? (
-                      <Link href={`/resource/${prevResource.id}`} className="block text-primary hover:underline truncate">
-                        {prevResource.title}
-                      </Link>
-                    ) : (
-                      <span className="text-muted-foreground">已是第一篇</span>
+                  <div className="flex-1 min-w-0">
+                    {prevNext.prev && (
+                      <>
+                        <div className="text-xs text-muted-foreground mb-1">上一篇</div>
+                        <Link href={`/resource/${prevNext.prev.id}`} className="block text-black font-semibold hover:underline truncate">
+                          {prevNext.prev.title}
+                        </Link>
+                      </>
                     )}
                   </div>
                   <div className="h-6 mx-4 border-l border-dashed border-border" />
-                  <div className="text-right max-w-[45%]">
-                    <div className="text-xs text-muted-foreground mb-1">下一篇</div>
-                    {nextResource ? (
-                      <Link href={`/resource/${nextResource.id}`} className="block text-primary hover:underline truncate">
-                        {nextResource.title}
-                      </Link>
-                    ) : (
-                      <span className="text-muted-foreground">已是最后一篇</span>
+                  <div className="text-right flex-1 min-w-0">
+                    {prevNext.next && (
+                      <>
+                        <div className="text-xs text-muted-foreground mb-1">下一篇</div>
+                        <Link href={`/resource/${prevNext.next.id}`} className="block text-black font-semibold hover:underline truncate">
+                          {prevNext.next.title}
+                        </Link>
+                      </>
                     )}
                   </div>
                 </div>
