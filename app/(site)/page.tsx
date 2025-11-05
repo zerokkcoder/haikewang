@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect, useRef } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
 import ResourceCard from '@/components/ResourceCard'
@@ -14,59 +15,104 @@ export default function Home() {
   const [total, setTotal] = useState(0)
   const sentinelRef = useRef<HTMLDivElement | null>(null)
   const lastPageRef = useRef(0)
+  const loadedIdsRef = useRef<Set<number>>(new Set())
+  const [query, setQuery] = useState('')
+  const [hasMore, setHasMore] = useState(true)
+  const [autoLoadEnabled, setAutoLoadEnabled] = useState(false)
+  // 移除初始化标记，改为监听 URL 的搜索参数变化
+  const router = useRouter()
+  const searchParams = useSearchParams()
+  const qParamValue = (searchParams.get('q') || '').trim()
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    setDisplayedResources([])
+    setTotal(0)
+    setPage(1)
+    lastPageRef.current = 0
+    loadedIdsRef.current.clear()
+    setHasMore(true)
+    setAutoLoadEnabled(false)
+    const q = query.trim()
+    const currentQ = searchParams.get('q') || ''
+    if (q) {
+      if ( q !== currentQ) router.replace(`/?q=${encodeURIComponent(q)}`)
+    } else {
+      // 保留空查询参数
+      router.replace('/?q=')
+    }
+    // 不在这里直接加载，等待 URL 变化后由 effect 统一触发加载，避免竞态或重复请求
+    // 兜底：立即触发一次首轮加载（使用当前输入作为 q），不等 URL effect
+    loadMoreResources(q)
+  }
 
-  const loadMoreResources = async () => {
-    if (isLoading) return
+  const loadMoreResources = async (qOverride?: string, force?: boolean) => {
+    if (isLoading || (!hasMore && !force)) return
     setIsLoading(true)
+    let computedTotal = 0
+    let nextHasMoreFlag = false
     try {
       const requestedPage = page
       // 防重复：若当前页与最近成功加载的页相同，跳过
       if (requestedPage === lastPageRef.current) { setIsLoading(false); return }
-      const res = await fetch(`/api/resources?page=${requestedPage}&size=${size}`)
+      const activeQ = (qOverride ?? qParamValue) || ''
+      const qParam = activeQ ? `&q=${encodeURIComponent(activeQ)}` : ''
+      const url = `/api/resources?page=${requestedPage}&size=${size}${qParam}`
+      const res = await fetch(url)
       if (!res.ok) { setIsLoading(false); return }
       let data: any = null
       try { data = await res.json() } catch { setIsLoading(false); return }
       const list = Array.isArray(data?.data) ? data.data : []
-      if (list.length === 0) { setIsLoading(false); return }
+      const pg = data?.pagination; if (pg) { computedTotal = pg.total || 0; setTotal(computedTotal) }
+      if (list.length === 0) {
+        // 标记已尝试当前页，推进页码，避免 Observer 再次请求同一页造成无限 loading
+        lastPageRef.current = requestedPage
+        setPage(requestedPage + 1)
+        setIsLoading(false)
+        return
+      }
       const next = list.map((r: any) => ({
         id: r.id,
         title: r.title,
         coverImage: r.cover || 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=800&h=600&fit=crop',
         category: r.subcategoryName || r.categoryName || '其他',
       }))
-      setDisplayedResources(prev => {
-        const merged = [...prev, ...next]
-        const seen = new Set<any>()
-        const unique = merged.filter(item => {
-          const k = item.id
-          if (seen.has(k)) return false
-          seen.add(k)
-          return true
-        })
-        return unique
-      })
-      const pg = data?.pagination; if (pg) { setTotal(pg.total || 0) }
-      // 标记已成功加载的页，并推进下一页
+      // 以 ref 跟踪已加载的唯一 ID，过滤掉重复项
+      const filtered = next.filter(item => !loadedIdsRef.current.has(item.id))
+      filtered.forEach(item => loadedIdsRef.current.add(item.id))
+      setDisplayedResources(prev => [...prev, ...filtered])
+      const loadedCount = loadedIdsRef.current.size
+      nextHasMoreFlag = (filtered.length > 0) && (computedTotal === 0 || loadedCount < computedTotal)
+      // 标记已成功加载的页；仅在有新增数据时推进下一页，否则停止自动加载
       lastPageRef.current = requestedPage
-      setPage(requestedPage + 1)
+      if (nextHasMoreFlag) {
+        setPage(requestedPage + 1)
+      } else {
+        // 无新增唯一数据，判定为已加载完，关闭自动加载
+        setAutoLoadEnabled(false)
+        setTotal(loadedCount)
+      }
     } catch {
       // ignore fetch errors
     } finally {
       setIsLoading(false)
+      // 首轮加载结束后再开启自动加载，仅当仍有更多数据时触发滚动加载
+      setHasMore(nextHasMoreFlag)
+      setAutoLoadEnabled(nextHasMoreFlag && computedTotal > 0)
     }
   }
 
   // Auto load more when the sentinel enters viewport
   useEffect(() => {
+    if (!autoLoadEnabled) return
     const sentinel = sentinelRef.current
     if (!sentinel) return
 
     const observer = new IntersectionObserver(
       (entries) => {
         const [entry] = entries
-        const hasMore = displayedResources.length < total || total === 0
+        // 使用全局 hasMore 状态控制是否继续加载
         if (entry.isIntersecting && hasMore && !isLoading) {
-          loadMoreResources()
+          loadMoreResources(qParamValue)
         }
       },
       { root: null, rootMargin: '200px', threshold: 0 }
@@ -74,55 +120,107 @@ export default function Home() {
 
     observer.observe(sentinel)
     return () => observer.disconnect()
-  }, [displayedResources.length, isLoading, page, total])
+  }, [autoLoadEnabled, displayedResources.length, isLoading, page, total, qParamValue])
 
-  // 初始加载
+  // 监听 URL 中的 q 改变：重置列表并加载第一页（统一入口）
   useEffect(() => {
-    if (displayedResources.length === 0) {
-      loadMoreResources()
-    }
-  }, [])
+    setQuery(qParamValue)
+    setDisplayedResources([])
+    setTotal(0)
+    setPage(1)
+    lastPageRef.current = 0
+    loadedIdsRef.current.clear()
+    // 导航后先关闭 Observer，待当前加载完成再开启
+    setAutoLoadEnabled(false)
+    loadMoreResources(qParamValue, true)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [qParamValue])
+
+  const showSearchView = (searchParams.get('q') !== null)
 
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Static Image, Title, Description, and Search */}
-      <section>
-        <div className="relative w-full h-64 md:h-72 overflow-hidden rounded-lg border border-border bg-card">
-          <Image
-            src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=600&fit=crop"
-            alt="Hero"
-            fill
-            className="object-cover"
-            priority
-          />
-          <div className="absolute inset-0 bg-black/35" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="w-full text-white">
-              <div className="w-full animate-fadeIn flex flex-col items-center justify-center text-center">
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">优课网，卷王必备的资源平台</h1>
-                <p className="text-base md:text-lg mb-4 opacity-90">海量优质资源，快速检索，一键下载</p>
-                <form
-                  onSubmit={(e) => e.preventDefault()}
-                  className="flex items-center justify-center w-full max-w-md mx-auto bg-white rounded-full shadow"
-                >
+      {!showSearchView && (
+        <section>
+          <div className="relative w-full h-64 md:h-72 overflow-hidden rounded-lg border border-border bg-card">
+            <Image
+              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=600&fit=crop"
+              alt="Hero"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-black/35" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-full text-white">
+                <div className="w-full animate-fadeIn flex flex-col items-center justify-center text-center">
+                  <h1 className="text-3xl md:text-4xl font-bold mb-4">优课网，卷王必备的资源平台</h1>
+                  <p className="text-base md:text-lg mb-4 opacity-90">海量优质资源，快速检索，一键下载</p>
+                  <form onSubmit={handleSearchSubmit} className="flex items-center justify-center w-full max-w-md mx-auto bg-white rounded-full shadow">
+                    <input
+                      type="text"
+                      placeholder="搜一下"
+                      value={query}
+                      onChange={(e) => setQuery(e.target.value)}
+                      className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-5 md:pl-6"
+                    />
+                    <button type="submit" className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
+                      <MagnifyingGlassIcon className="w-5 h-5" />
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {showSearchView && (
+        <section>
+          <div className="relative w-full h-40 md:h-48 overflow-hidden rounded-lg border border-border bg-card">
+            <Image
+              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=400&fit=crop"
+              alt="Search Header"
+              fill
+              className="object-cover"
+              priority
+            />
+            <div className="absolute inset-0 bg-black/25" />
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="w-full">
+                <form onSubmit={handleSearchSubmit} className="flex items-center justify-center w-full max-w-md mx-auto bg-white rounded-full shadow">
                   <input
                     type="text"
                     placeholder="搜一下"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
                     className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-5 md:pl-6"
                   />
-                  <button
-                    type="submit"
-                    className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center hover:opacity-90"
-                    aria-label="搜索"
-                  >
+                  <button type="submit" className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
                     <MagnifyingGlassIcon className="w-5 h-5" />
                   </button>
                 </form>
               </div>
             </div>
           </div>
-        </div>
-      </section>
+          <div className="container mx-auto mt-6!">
+            <div className="rounded-lg border border-border bg-card p-3 text-sm">
+              <div className="flex items-center gap-3 mb-2">
+                <span className="text-muted-foreground">分类</span>
+                <span className="px-2 py-0.5 rounded-full bg-pink-500 text-white">全部</span>
+              </div>
+              <div className="flex items-center gap-3">
+                <span className="text-muted-foreground">排序</span>
+                <span className="px-2 py-0.5 rounded-full bg-pink-500 text-white">最新发布</span>
+                <span className="px-2 py-0.5 rounded-full text-black">下载最多</span>
+                <span className="px-2 py-0.5 rounded-full text-black">浏览最多</span>
+                <span className="px-2 py-0.5 rounded-full text-black">评论最多</span>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* Featured Resources Section */}
       <section className="mt-6">

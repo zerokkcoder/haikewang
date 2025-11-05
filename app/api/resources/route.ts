@@ -7,11 +7,24 @@ export async function GET(req: Request) {
     const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
     const size = Math.max(1, Math.min(50, Number(url.searchParams.get('size')) || 6))
     const skip = (page - 1) * size
+    const q = (url.searchParams.get('q') || '').trim()
+    const where = q
+      ? {
+          OR: [
+            { title: { contains: q } },
+            { content: { contains: q } },
+          ],
+        }
+      : undefined
+
+    // Debug log: observe incoming requests and parameters during development
+    console.log(`[API /resources] page=${page} size=${size} q="${q}"`) // eslint-disable-line no-console
 
     const [total, rows] = await Promise.all([
-      prisma.resource.count(),
+      prisma.resource.count({ where }),
       prisma.resource.findMany({
         orderBy: [{ id: 'desc' }],
+        where,
         select: {
           id: true,
           title: true,
