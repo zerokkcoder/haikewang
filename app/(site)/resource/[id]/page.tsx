@@ -23,6 +23,9 @@ export default function ResourceDetailPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [prevNext, setPrevNext] = useState<{ prev: { id: number; title: string } | null; next: { id: number; title: string } | null }>({ prev: null, next: null })
+  const [hotTags, setHotTags] = useState<{ id: number; name: string }[]>([])
+  const [latestArticles, setLatestArticles] = useState<{ id: number; title: string }[]>([])
+  const [guessList, setGuessList] = useState<{ id: number; title: string; coverImage: string; category: string }[]>([])
 
   useEffect(() => {
     const load = async () => {
@@ -58,6 +61,37 @@ export default function ResourceDetailPage() {
           if (pnRes.ok) {
             const pn = await pnRes.json()
             setPrevNext({ prev: pn?.data?.prev || null, next: pn?.data?.next || null })
+          }
+        } catch {}
+        // 获取随机资源6条作为猜你喜欢
+        try {
+          const gRes = await fetch('/api/resources/random?size=6')
+          if (gRes.ok) {
+            const gj = await gRes.json()
+            const list = Array.isArray(gj?.data) ? gj.data : []
+            const mapped = list.map((r: any) => ({
+              id: r.id,
+              title: r.title,
+              coverImage: r.cover || 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=800&h=600&fit=crop',
+              category: r.subcategoryName || r.categoryName || '其他',
+            }))
+            setGuessList(mapped)
+          }
+        } catch {}
+        // 获取最新文章（最新10条）
+        try {
+          const laRes = await fetch('/api/resources?page=1&size=10')
+          if (laRes.ok) {
+            const laj = await laRes.json()
+            const list = Array.isArray(laj?.data) ? laj.data : []
+            setLatestArticles(list.map((r: any) => ({ id: r.id, title: r.title })))
+          }
+        } catch {}
+        try {
+          const tRes = await fetch('/api/tags')
+          if (tRes.ok) {
+            const tj = await tRes.json()
+            setHotTags(Array.isArray(tj?.data) ? tj.data : [])
           }
         } catch {}
       } finally {
@@ -338,7 +372,7 @@ export default function ResourceDetailPage() {
               <div className="py-4 px-2 md:px-4 bg-card rounded-lg shadow-sm mt-4">
                 <div className="text-sm text-foreground font-bold mb-2">猜你喜欢</div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
-                  {likedResources.map((res, idx) => (
+                  {guessList.map((res, idx) => (
                     <ResourceCard key={res.id} resource={res} index={idx} />
                   ))}
                 </div>
@@ -387,23 +421,19 @@ export default function ResourceDetailPage() {
                 </p>
               </div>
 
-            {/* Hot Articles */}
+            {/* Latest Articles */}
             <div className="bg-card rounded-lg shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">热门文章</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">最新文章</h3>
               <div className="space-y-2">
-                {resources
-                  .slice()
-                  .sort((a, b) => (b.downloadCount || 0) - (a.downloadCount || 0))
-                  .slice(0, 6)
-                  .map((r) => (
-                    <Link
-                      key={r.id}
-                      href={`/resource/${r.id}`}
-                      className="block text-foreground hover:underline truncate font-medium"
-                    >
-                      {r.title}
-                    </Link>
-                  ))}
+                {latestArticles.map((r) => (
+                  <Link
+                    key={r.id}
+                    href={`/resource/${r.id}`}
+                    className="block text-foreground hover:underline truncate font-medium"
+                  >
+                    {r.title}
+                  </Link>
+                ))}
               </div>
             </div>
 
@@ -411,13 +441,13 @@ export default function ResourceDetailPage() {
             <div className="bg-card rounded-lg shadow-sm p-6">
               <h3 className="text-lg font-semibold text-foreground mb-4">热门标签</h3>
               <div className="flex flex-wrap gap-2">
-                {Array.from(new Set(resources.flatMap(r => r.tags))).map((tag, idx) => (
+                {hotTags.map((tag, idx) => (
                   <span
-                    key={tag}
+                    key={tag.id}
                     className="px-3 py-1 text-xs md:text-sm rounded-none text-white hover:opacity-90"
                     style={{ backgroundColor: tagColors[idx % tagColors.length] }}
                   >
-                    {tag}
+                    {tag.name}
                   </span>
                 ))}
               </div>
