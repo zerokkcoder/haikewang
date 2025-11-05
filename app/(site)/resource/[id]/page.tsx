@@ -9,6 +9,11 @@ import { resources, currentUser, categories } from '@/lib/utils';
 import { StarIcon, EyeIcon, ArrowDownTrayIcon, ClockIcon, UserIcon, TagIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { checkDownloadRestrictions, processDownload, DownloadResult, getUserDownloadQuota } from '@/lib/download';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
 export default function ResourceDetailPage() {
   const params = useParams();
@@ -19,12 +24,39 @@ export default function ResourceDetailPage() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
-    if (resourceId) {
-      const foundResource = resources.find(r => r.id === resourceId);
-      setResource(foundResource);
-      setLoading(false);
+    const load = async () => {
+      if (!resourceId) return
+      try {
+        const res = await fetch(`/api/resources/${resourceId}`)
+        if (!res.ok) { setLoading(false); return }
+        const json = await res.json()
+        const r = json?.data
+        if (!r) { setLoading(false); return }
+        const firstDl = Array.isArray(r.downloads) && r.downloads.length ? r.downloads[0] : null
+        const mapped = {
+          id: String(r.id),
+          title: r.title,
+          category: r.category?.name || '其他',
+          categoryId: r.category?.id || null,
+          subcategory: r.subcategory?.name || '',
+          subcategoryId: r.subcategory?.id || null,
+          description: r.content || '',
+          coverImage: r.cover || 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=800&h=600&fit=crop',
+          downloadUrl: firstDl?.url || '',
+          downloadCode: firstDl?.code || '',
+          price: Number(r.price || 0),
+          tags: Array.isArray(r.tags) ? r.tags.map((t: any) => t.name) : [],
+          isNew: false,
+          isPopular: false,
+          isVipOnly: false,
+        }
+        setResource(mapped)
+      } finally {
+        setLoading(false)
+      }
     }
-  }, [resourceId]);
+    load()
+  }, [resourceId])
 
   if (loading) {
     return (
@@ -50,7 +82,7 @@ export default function ResourceDetailPage() {
   const categoryObj = categories.find(c => c.name === resource.category);
   const subcategoryObj = categoryObj?.subcategories.find(s => s.name === resource.subcategory);
   const restrictions = checkDownloadRestrictions(resource, currentUser);
-  const extractionCode = 'SiYh';
+  const extractionCode = resource.downloadCode || '';
   const tagColors = ['#1f2937','#374151','#4b5563','#2563eb','#7c3aed','#0f766e','#b91c1c','#6b21a8','#1d4ed8','#15803d'];
   const currentIndex = resources.findIndex(r => r.id === resourceId);
   const prevResource = currentIndex > 0 ? resources[currentIndex - 1] : null;
@@ -120,22 +152,18 @@ export default function ResourceDetailPage() {
         <nav className="flex items-center space-x-2 text-sm text-muted-foreground mb-6">
           <Link href="/" className="hover:text-primary">首页</Link>
           <span>/</span>
-          {categoryObj ? (
-            <Link href={`/category/${categoryObj.id}`} className="hover:text-primary">
-              {categoryObj.name}
-            </Link>
+          {resource.categoryId ? (
+            <Link href={`/category/${resource.categoryId}`} className="hover:text-primary">{resource.category || '未分类'}</Link>
           ) : (
-            <span className="text-muted-foreground">{resource.category}</span>
+            <span className="text-muted-foreground">{resource.category || '未分类'}</span>
           )}
-          <span>/</span>
-          {subcategoryObj ? (
+          {resource.subcategoryId ? (
             <>
-              <Link href={`/category/${categoryObj?.id}/${subcategoryObj.id}`} className="hover:text-primary">
-                {subcategoryObj.name}
-              </Link>
               <span>/</span>
+              <Link href={`/category/${resource.categoryId}/${resource.subcategoryId}`} className="hover:text-primary">{resource.subcategory}</Link>
             </>
           ) : null}
+          <span>/</span>
           <span className="text-foreground">{resource.title}</span>
         </nav>
 
@@ -168,15 +196,45 @@ export default function ResourceDetailPage() {
               {/* Category info: show last level only with gray dot */}
               <div className="flex items-center text-sm text-muted-foreground mb-3">
                 <span className="inline-block w-3 h-3 rounded-full border border-gray-400 mr-2"></span>
-                <span>
-                  {subcategoryObj ? subcategoryObj.name : (categoryObj ? categoryObj.name : resource.subcategory || resource.category)}
-                </span>
+                <span>{resource.subcategory || resource.category || '未分类'}</span>
               </div>
 
               {/* Meta info removed per request */}
 
-              {/* Description */}
-              <p className="text-muted-foreground leading-relaxed mb-6">{resource.description}</p>
+              {/* Markdown Content */}
+              <div className="prose prose-sm max-w-none text-foreground leading-relaxed mb-6">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  rehypePlugins={[rehypeRaw, rehypeHighlight]}
+                  components={{
+                    a: ({ node, ...props }) => (
+                      <a {...props} target="_blank" rel="noopener noreferrer" />
+                    ),
+                    h1: ({ children }) => (
+                      <h1 className="text-2xl md:text-3xl font-bold mt-4 mb-2 text-foreground">{children}</h1>
+                    ),
+                    h2: ({ children }) => (
+                      <h2 className="text-xl md:text-2xl font-semibold mt-4 mb-2 text-foreground">{children}</h2>
+                    ),
+                    h3: ({ children }) => (
+                      <h3 className="text-lg md:text-xl font-semibold mt-3 mb-2 text-foreground">{children}</h3>
+                    ),
+                    code: ({ inline, className, children, ...props }) => {
+                      const langClass = className || ''
+                      if (inline) {
+                        return <code className={`hljs ${langClass}`} {...props}>{children}</code>
+                      }
+                      return (
+                        <pre className="hljs">
+                          <code className={`hljs ${langClass}`} {...props}>{children}</code>
+                        </pre>
+                      )
+                    },
+                  }}
+                >
+                  {resource.description || ''}
+                </ReactMarkdown>
+              </div>
 
               {/* Download section: always show both styles */}
               <div className="space-y-4">
