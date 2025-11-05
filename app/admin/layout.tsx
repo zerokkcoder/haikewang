@@ -52,6 +52,7 @@ function AsideMenu({ collapsed }: { collapsed: boolean }) {
   const items = [
     { href: "/admin", label: "仪表盘", Icon: HomeIcon },
     { href: "/admin/categories", label: "分类管理", Icon: DocumentIcon },
+    { href: "/admin/tags", label: "标签管理", Icon: DocumentIcon },
     { href: "/admin/resources", label: "资源管理", Icon: Squares2X2Icon },
   ] as const
 

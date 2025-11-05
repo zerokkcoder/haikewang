@@ -67,6 +67,9 @@ export default function AdminResourcesPage() {
   )
   const [list, setList] = useState<ResItem[]>([])
   const [loading, setLoading] = useState(true)
+  const [page, setPage] = useState(1)
+  const [size, setSize] = useState(10)
+  const [total, setTotal] = useState(0)
   const [cats, setCats] = useState<CatItem[]>([])
   const [subs, setSubs] = useState<SubItem[]>([])
 
@@ -92,11 +95,13 @@ export default function AdminResourcesPage() {
 
   const previewHtml = useMemo(() => ({ __html: renderMd(content) }), [content])
 
-  const fetchList = async () => {
+  const fetchList = async (p = page, s = size) => {
     setLoading(true)
-    const res = await fetch('/api/admin/resources')
+    const res = await fetch(`/api/admin/resources?page=${p}&size=${s}`)
     const data = await res.json()
     setList(data?.data || [])
+    const pg = data?.pagination
+    if (pg) { setPage(pg.page || 1); setSize(pg.size || 10); setTotal(pg.total || 0) }
     setLoading(false)
   }
 
@@ -225,6 +230,25 @@ export default function AdminResourcesPage() {
               </tbody>
             </table>
           )}
+        </div>
+      </div>
+
+      {/* Pagination */}
+      <div className="flex items-center justify-between bg-card rounded-md shadow-sm p-3">
+        <div className="text-sm text-muted-foreground">共 {total} 条，页大小
+          <select
+            className="input ml-2 text-center px-1"
+            style={{ width: 48, display: 'inline-block', paddingLeft: 4, paddingRight: 4 }}
+            value={size}
+            onChange={(e) => { const s = Number(e.target.value); setSize(s); fetchList(1, s) }}
+          >
+            {[10,20,50].map(s => (<option key={s} value={s}>{s}</option>))}
+          </select>
+        </div>
+        <div className="flex items-center gap-2">
+          <button className="btn btn-secondary btn-sm" disabled={page <= 1} onClick={() => fetchList(page - 1, size)}>上一页</button>
+          <span className="text-sm">第 {page} / {Math.max(1, Math.ceil(total / size))} 页</span>
+          <button className="btn btn-secondary btn-sm" disabled={page >= Math.ceil(total / size)} onClick={() => fetchList(page + 1, size)}>下一页</button>
         </div>
       </div>
 

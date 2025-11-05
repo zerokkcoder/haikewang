@@ -18,15 +18,24 @@ function verifyAdmin(req: Request) {
 export async function GET(req: Request) {
   const admin = verifyAdmin(req)
   if (!admin) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-  const resources = await prisma.resource.findMany({
-    orderBy: [{ id: 'desc' }],
-    include: {
-      category: { select: { id: true, name: true } },
-      subcategory: { select: { id: true, name: true } },
-      tags: { include: { tag: true } },
-      downloads: true,
-    },
-  })
+  const url = new URL(req.url)
+  const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+  const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size')) || 10))
+  const skip = (page - 1) * size
+  const [total, resources] = await Promise.all([
+    prisma.resource.count(),
+    prisma.resource.findMany({
+      orderBy: [{ id: 'desc' }],
+      include: {
+        category: { select: { id: true, name: true } },
+        subcategory: { select: { id: true, name: true } },
+        tags: { include: { tag: true } },
+        downloads: true,
+      },
+      skip,
+      take: size,
+    }),
+  ])
   const data = resources.map(r => ({
     id: r.id,
     cover: r.cover,
@@ -40,7 +49,7 @@ export async function GET(req: Request) {
     tags: r.tags.map(t => ({ id: t.tagId, name: t.tag.name })),
     downloads: r.downloads.map(d => ({ id: d.id, url: d.url, code: d.code })),
   }))
-  return NextResponse.json({ success: true, data })
+  return NextResponse.json({ success: true, data, pagination: { page, size, total } })
 }
 
 export async function POST(req: Request) {
