@@ -26,6 +26,7 @@ model Category {
   sort          Int           @default(0)
   createdAt     DateTime      @default(now()) @map("created_at")
   subcategories Subcategory[]
+  resources     Resource[]
 
   @@map("categories")
 }
@@ -37,6 +38,57 @@ model Subcategory {
   sort       Int      @default(0)
   createdAt  DateTime @default(now()) @map("created_at")
   category   Category @relation(fields: [categoryId], references: [id])
+  resources  Resource[]
 
   @@map("subcategories")
+}
+
+model Resource {
+  id             Int            @id @default(autoincrement())
+  cover          String?
+  title          String
+  content        String         @db.Text
+  downloadCount  Int            @default(0)
+  viewCount      Int            @default(0)
+  hotScore       Int            @default(0)
+  categoryId     Int
+  subcategoryId  Int?
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  category       Category       @relation(fields: [categoryId], references: [id])
+  subcategory    Subcategory?   @relation(fields: [subcategoryId], references: [id])
+  tags           ResourceTag[]
+  downloads      ResourceDownload[]
+
+  @@map("resources")
+}
+
+model Tag {
+  id        Int           @id @default(autoincrement())
+  name      String        @unique
+  createdAt DateTime      @default(now())
+  resources ResourceTag[]
+
+  @@map("tags")
+}
+
+model ResourceTag {
+  resourceId Int
+  tagId      Int
+  resource   Resource @relation(fields: [resourceId], references: [id])
+  tag        Tag      @relation(fields: [tagId], references: [id])
+
+  @@id([resourceId, tagId])
+  @@map("resource_tags")
+}
+
+model ResourceDownload {
+  id         Int      @id @default(autoincrement())
+  resourceId Int
+  url        String
+  code       String?
+  createdAt  DateTime @default(now())
+  resource   Resource @relation(fields: [resourceId], references: [id])
+
+  @@map("resource_downloads")
 }

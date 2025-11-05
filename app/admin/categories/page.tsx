@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react'
 import ConfirmDialog from '@/app/admin/_components/ConfirmDialog'
+import Toast from '@/app/admin/_components/Toast'
 
 export default function AdminCategoriesPage() {
   const [list, setList] = useState<{ id: number; name: string }[]>([])
@@ -20,6 +21,9 @@ export default function AdminCategoriesPage() {
   const [subEditId, setSubEditId] = useState<number | null>(null)
   const [subEditName, setSubEditName] = useState('')
   const [subEditSort, setSubEditSort] = useState<number | ''>('')
+  const [toastOpen, setToastOpen] = useState(false)
+  const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('info')
+  const [toastMsg, setToastMsg] = useState('')
   const [subDelId, setSubDelId] = useState<number | null>(null)
   const [subDelStep, setSubDelStep] = useState<0 | 1 | 2>(0)
 
@@ -232,7 +236,21 @@ export default function AdminCategoriesPage() {
         cancelText="取消"
         onConfirm={async () => {
           if (delId == null) return
-          await fetch(`/api/admin/categories/${delId}`, { method: 'DELETE' })
+          const res = await fetch(`/api/admin/categories/${delId}`, { method: 'DELETE' })
+          let ok = res.ok
+          let msg = ''
+          try {
+            const data = await res.json()
+            ok = ok && !!data?.success
+            msg = data?.message || ''
+          } catch {}
+          if (!ok) {
+            setToastType('error'); setToastMsg(msg || '该分类或其子分类存在关联资源，禁止删除'); setToastOpen(true)
+            // 自动取消确认弹窗
+            setDelId(null)
+            return
+          }
+          setToastType('success'); setToastMsg('分类已删除'); setToastOpen(true)
           setDelId(null)
           fetchList()
         }}
@@ -258,13 +276,37 @@ export default function AdminCategoriesPage() {
         cancelText="返回"
         onConfirm={async () => {
           if (subDelId == null) return
-          await fetch(`/api/admin/subcategories/${subDelId}`, { method: 'DELETE' })
+          const res = await fetch(`/api/admin/subcategories/${subDelId}`, { method: 'DELETE' })
+          let ok = res.ok
+          let msg = ''
+          try {
+            const data = await res.json()
+            ok = ok && !!data?.success
+            msg = data?.message || ''
+          } catch {}
+          if (!ok) {
+            setToastType('error'); setToastMsg(msg || '该子分类存在关联资源，禁止删除'); setToastOpen(true)
+            // 自动取消二次确认弹窗
+            setSubDelId(null)
+            setSubDelStep(0)
+            return
+          }
           const catId = expandedId
           setSubDelId(null)
           setSubDelStep(0)
           if (catId) fetchSub(catId)
+          setToastType('success'); setToastMsg('子分类已删除'); setToastOpen(true)
         }}
         onCancel={() => setSubDelStep(1)}
+      />
+
+      {/* 通知 */}
+      <Toast
+        open={toastOpen}
+        type={toastType}
+        title={toastType === 'error' ? '操作失败' : toastType === 'success' ? '操作成功' : '提示'}
+        message={toastMsg}
+        onClose={() => setToastOpen(false)}
       />
     </div>
   )

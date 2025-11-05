@@ -46,6 +46,11 @@ export async function DELETE(req: Request, { params }: { params: Promise<{ id: s
     return NextResponse.json({ success: false, message: '无效的子分类ID' }, { status: 400 })
   }
   try {
+    // 禁止删除：若有资源使用该子分类
+    const usageCount = await prisma.resource.count({ where: { subcategoryId: idNum } })
+    if (usageCount > 0) {
+      return NextResponse.json({ success: false, message: '该子分类存在关联资源，禁止删除' }, { status: 400 })
+    }
     await prisma.subcategory.delete({ where: { id: idNum } })
     return NextResponse.json({ success: true })
   } catch (err: any) {
