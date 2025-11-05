@@ -48,6 +48,7 @@ model Resource {
   cover          String?
   title          String
   content        String         @db.Text
+  price          Decimal        @default(0) @db.Decimal(10, 2)
   downloadCount  Int            @default(0)
   viewCount      Int            @default(0)
   hotScore       Int            @default(0)

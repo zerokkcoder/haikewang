@@ -41,6 +41,7 @@ export async function GET(req: Request) {
     cover: r.cover,
     title: r.title,
     content: r.content,
+    price: r.price,
     downloadCount: r.downloadCount,
     viewCount: r.viewCount,
     hotScore: r.hotScore,
@@ -62,6 +63,7 @@ export async function POST(req: Request) {
     categoryId, subcategoryId,
     tags = [],
     download,
+    price,
   } = body
   if (!title || !content || !categoryId) {
     return NextResponse.json({ success: false, message: '缺少必填字段' }, { status: 400 })
@@ -84,6 +86,7 @@ export async function POST(req: Request) {
         cover: cover ?? null,
         title: String(title),
         content: String(content),
+        price: Number.isFinite(Number(price)) ? Number(price) : 0,
         downloadCount: Number(downloadCount) || 0,
         viewCount: Number(viewCount) || 0,
         hotScore: Number(hotScore) || 0,

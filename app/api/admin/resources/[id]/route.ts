@@ -30,6 +30,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
     categoryId, subcategoryId,
     tags,
     download,
+    price,
   } = body
   try {
     // tags
@@ -54,6 +55,7 @@ export async function PUT(req: Request, { params }: { params: Promise<{ id: stri
         cover: cover ?? undefined,
         title: title !== undefined ? String(title) : undefined,
         content: content !== undefined ? String(content) : undefined,
+        price: price !== undefined && Number.isFinite(Number(price)) ? Number(price) : undefined,
         downloadCount: downloadCount !== undefined ? Number(downloadCount) : undefined,
         viewCount: viewCount !== undefined ? Number(viewCount) : undefined,
         hotScore: hotScore !== undefined ? Number(hotScore) : undefined,

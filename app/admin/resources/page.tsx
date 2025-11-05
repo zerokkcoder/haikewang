@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic'
 import MarkdownIt from 'markdown-it'
 import 'react-markdown-editor-lite/lib/index.css'
 import Link from 'next/link'
+import { formatPrice } from '@/lib/utils'
 import ConfirmDialog from '@/app/admin/_components/ConfirmDialog'
 
 type ResItem = {
@@ -12,6 +13,7 @@ type ResItem = {
   cover?: string | null
   title: string
   content: string
+  price?: any
   downloadCount: number
   viewCount: number
   hotScore: number
@@ -81,6 +83,7 @@ export default function AdminResourcesPage() {
   const [cover, setCover] = useState('')
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
+  const [price, setPrice] = useState<number | ''>('')
   const contentRef = useRef<string>('')
   const [mdPreview, setMdPreview] = useState(false)
   // 已移除：下载量/浏览量/热门指数
@@ -130,6 +133,7 @@ export default function AdminResourcesPage() {
     contentRef.current = ''
     // 已移除字段不再初始化
     setCategoryId(''); setSubcategoryId(''); setTagsInput('')
+    setPrice('');
     setDlUrl(''); setDlCode(''); setModalOpen(true)
   }
 
@@ -147,6 +151,7 @@ export default function AdminResourcesPage() {
     const firstDl = r.downloads[0]
     setDlUrl(firstDl?.url || '')
     setDlCode(firstDl?.code || '')
+    setPrice((r as any).price ?? 0)
     setModalOpen(true)
   }
 
@@ -154,6 +159,7 @@ export default function AdminResourcesPage() {
     const payload: any = {
       cover: cover || null,
       title, content: contentRef.current,
+      price: price === '' ? 0 : Number(price),
       // 不提交下载量/浏览量/热门指数
       categoryId: typeof categoryId === 'number' ? categoryId : undefined,
       subcategoryId: typeof subcategoryId === 'number' ? subcategoryId : null,
@@ -189,6 +195,7 @@ export default function AdminResourcesPage() {
                 <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-4">封面</th>
                   <th className="py-2 pr-4">标题</th>
+                  <th className="py-2 pr-4">价格</th>
                   <th className="py-2 pr-4">分类</th>
                   <th className="py-2 pr-4">子分类</th>
                   
@@ -208,6 +215,7 @@ export default function AdminResourcesPage() {
                         {r.title}
                       </Link>
                     </td>
+                    <td className="py-2 pr-4">{formatPrice(Number((r as any).price ?? 0))}</td>
                     <td className="py-2 pr-4">{r.category?.name || '-'}</td>
                     <td className="py-2 pr-4">{r.subcategory?.name || '-'}</td>
                     
@@ -326,6 +334,10 @@ export default function AdminResourcesPage() {
             <div>
               <label className="text-xs text-muted-foreground">标题</label>
               <input value={title} onChange={(e) => setTitle(e.target.value)} className="input w-full" />
+            </div>
+            <div>
+              <label className="text-xs text-muted-foreground">价格</label>
+              <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value === '' ? '' : Number(e.target.value))} className="input w-full" />
             </div>
             
             <div>
