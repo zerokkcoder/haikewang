@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import "../globals.css";
 import HeaderStatus from "./_components/HeaderStatus";
-import { HomeIcon, Squares2X2Icon, DocumentIcon, ArrowRightOnRectangleIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, Squares2X2Icon, DocumentIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, TagIcon, UserIcon } from "@heroicons/react/24/outline";
 import { useState } from "react";
 
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -52,8 +52,9 @@ function AsideMenu({ collapsed }: { collapsed: boolean }) {
   const items = [
     { href: "/admin", label: "仪表盘", Icon: HomeIcon },
     { href: "/admin/categories", label: "分类管理", Icon: DocumentIcon },
-    { href: "/admin/tags", label: "标签管理", Icon: DocumentIcon },
+    { href: "/admin/tags", label: "标签管理", Icon: TagIcon },
     { href: "/admin/resources", label: "资源管理", Icon: Squares2X2Icon },
+    { href: "/admin/users", label: "用户管理", Icon: UserIcon },
   ] as const
 
   return (
