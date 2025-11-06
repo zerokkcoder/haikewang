@@ -104,6 +104,8 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  orders        Order[]
+
   @@map("users")
 }
 
@@ -131,4 +133,26 @@ model MembershipPlan {
   updatedAt      DateTime  @updatedAt @map("updated_at")
 
   @@map("membership_plans")
+}
+
+// Orders for payments (course/member)
+model Order {
+  id          Int      @id @default(autoincrement())
+  userId      Int?
+  outTradeNo  String   @unique @map("out_trade_no")
+  tradeNo     String?  @map("trade_no")
+  orderType   String   @map("order_type") // 'member' | 'course'
+  productId   Int      @map("product_id")
+  productName String   @map("product_name")
+  amount      Decimal  @db.Decimal(10, 2)
+  status      String   // 'pending' | 'success' | 'closed' | 'failed'
+  payChannel  String   @default("alipay") @map("pay_channel")
+  notifyRaw   Json?    @map("notify_raw")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  paidAt      DateTime? @map("paid_at")
+
+  user        User?    @relation(fields: [userId], references: [id])
+
+  @@map("orders")
 }

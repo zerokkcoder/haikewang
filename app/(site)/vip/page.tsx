@@ -128,6 +128,8 @@ export default function VIPPage() {
         onClose={() => setShowPaymentModal(false)}
         amount={selectedPlanId ? plans.find(p => p.id === selectedPlanId)?.price || 0 : 0}
         description={`${selectedPlanId ? plans.find(p => p.id === selectedPlanId)?.name : ''}会员开通`}
+        orderType="member"
+        productId={selectedPlanId ?? 0}
         onPaymentSuccess={(transactionId) => {
           toast(`支付成功！交易ID: ${transactionId}`, 'success');
           // Here you would typically update the user status and redirect

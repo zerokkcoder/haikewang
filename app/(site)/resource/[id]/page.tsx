@@ -8,6 +8,7 @@ import Link from 'next/link';
 import ResourceCard from '@/components/ResourceCard';
 import { resources, currentUser } from '@/lib/utils';
 import { StarIcon, EyeIcon, ArrowDownTrayIcon, ClockIcon, UserIcon, TagIcon, ShieldCheckIcon } from '@heroicons/react/24/outline';
+import PaymentModal from '@/components/PaymentModal'
 import { StarIcon as StarSolidIcon } from '@heroicons/react/24/solid';
 import { checkDownloadRestrictions, processDownload, DownloadResult, getUserDownloadQuota } from '@/lib/download';
 import ReactMarkdown from 'react-markdown';
@@ -481,47 +482,19 @@ export default function ResourceDetailPage() {
         </div>
       )}
 
-      {/* Payment Modal */}
-      {showPaymentModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-card rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-foreground mb-4">付费下载</h3>
-            <p className="text-muted-foreground mb-4">
-              此资源需要支付 ¥{resource.price} 后才能下载。
-            </p>
-            <div className="bg-secondary rounded-lg p-4 mb-6">
-              <p className="text-sm text-secondary-foreground mb-2">选择支付方式:</p>
-              <div className="space-y-2">
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="radio" name="payment" defaultChecked className="text-primary" />
-                  <span className="text-foreground">支付宝</span>
-                </label>
-                <label className="flex items-center gap-3 cursor-pointer">
-                  <input type="radio" name="payment" className="text-primary" />
-                  <span className="text-foreground">微信支付</span>
-                </label>
-              </div>
-            </div>
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowPaymentModal(false)}
-                className="flex-1 btn btn-secondary"
-              >
-                取消
-              </button>
-              <button
-                onClick={() => {
-                  toast('跳转到支付页面...', 'info');
-                  setShowPaymentModal(false);
-                }}
-                className="flex-1 btn btn-primary"
-              >
-                立即支付
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 支付弹窗：接入支付宝当面付，与会员购买一致 */}
+      <PaymentModal
+        isOpen={showPaymentModal}
+        onClose={() => setShowPaymentModal(false)}
+        amount={Number(resource.price || 0)}
+        description={`${resource.title} 资源购买`}
+        orderType="course"
+        productId={resource.id}
+        onPaymentSuccess={(outTradeNo) => {
+          toast(`支付成功！订单号: ${outTradeNo}`, 'success')
+          setShowPaymentModal(false)
+        }}
+      />
     </div>
   );
 }

@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { useToast } from '@/components/Toast'
-import { processPayment, generateOrderId, paymentMethods, createPaymentStatus } from '@/lib/payment'
+// import { processPayment, generateOrderId, paymentMethods, createPaymentStatus } from '@/lib/payment'
 
 interface PaymentModalProps {
   isOpen: boolean
@@ -10,13 +10,15 @@ interface PaymentModalProps {
   amount: number
   description: string
   onPaymentSuccess: (transactionId: string) => void
+  orderType: 'course' | 'member'
+  productId: string | number
 }
 
-export default function PaymentModal({ isOpen, onClose, amount, description, onPaymentSuccess }: PaymentModalProps) {
+export default function PaymentModal({ isOpen, onClose, amount, description, onPaymentSuccess, orderType, productId }: PaymentModalProps) {
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'alipay' | 'wechat'>('alipay')
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'qr' | 'success'>('select')
-  const [paymentData, setPaymentData] = useState<{ qrCode?: string; paymentUrl?: string; transactionId?: string }>({})
+  const [paymentData, setPaymentData] = useState<{ qrCode?: string; paymentUrl?: string; transactionId?: string; outTradeNo?: string }>({})
   const { toast } = useToast()
 
   if (!isOpen) return null
@@ -26,27 +28,31 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
     setPaymentStep('processing')
 
     try {
-      const orderId = generateOrderId()
-      const response = await processPayment({
-        amount,
-        orderId,
-        description,
-        paymentMethod: selectedPaymentMethod
-      })
+      // 当面付预下单：生成二维码
+      // 订单号：根据类型设置不同前缀，使用下划线分隔，确保仅字母/数字/下划线，且全局唯一（含时间戳+随机后缀）
+      const prefix = orderType === 'member' ? 'MEM' : 'COUR'
+      const uniqueSuffix = Math.random().toString(36).slice(2,6)
+      // 订单号不含下划线和 productId，仅字母数字组合，保持唯一
+      const outTradeNo = `${prefix}${Date.now()}${uniqueSuffix}`
 
-      if (response.success) {
-        createPaymentStatus(orderId, response.transactionId!, amount, selectedPaymentMethod)
-        
-        if (response.qrCode) {
-          setPaymentData({ qrCode: response.qrCode, transactionId: response.transactionId })
-          setPaymentStep('qr')
-        } else if (response.paymentUrl) {
-          setPaymentData({ paymentUrl: response.paymentUrl, transactionId: response.transactionId })
-          setPaymentStep('qr')
-        }
-      } else {
-        toast('支付初始化失败: ' + (response.error ?? ''), 'error')
+      const res = await fetch('/api/pay/alipay/precreate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          amount,
+          subject: description,
+          orderId: outTradeNo,
+          orderType,
+          productId,
+        })
+      })
+      const json = await res.json().catch(() => null)
+      if (!res.ok || !json?.success) {
+        toast(json?.message || '支付初始化失败', 'error')
         setPaymentStep('select')
+      } else {
+        setPaymentData({ qrCode: json.data.qrCode, outTradeNo: json.data.outTradeNo })
+        setPaymentStep('qr')
       }
     } catch (error) {
       toast('支付处理出错: ' + String(error ?? ''), 'error')
@@ -59,7 +65,7 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
   const handlePaymentSuccess = () => {
     setPaymentStep('success')
     setTimeout(() => {
-      onPaymentSuccess(paymentData.transactionId!)
+      onPaymentSuccess(paymentData.outTradeNo || '')
       onClose()
       setPaymentStep('select')
       setPaymentData({})
@@ -96,32 +102,27 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
             </div>
 
             <div className="space-y-3 mb-6">
-              {Object.entries(paymentMethods).map(([key, method]) => (
-                <button
-                  key={key}
-                  onClick={() => setSelectedPaymentMethod(key as 'alipay' | 'wechat')}
-                  className={`w-full p-4 border border-border rounded-lg flex items-center gap-3 transition-colors ${
-                    selectedPaymentMethod === key
-                      ? 'border-primary bg-secondary'
-                      : 'hover:bg-muted'
-                  }`}
-                >
-                  <div className="text-2xl">{method.icon}</div>
-                  <div className="flex-1 text-left">
-                    <div className="font-medium">{method.name}</div>
-                    <div className="text-sm text-muted-foreground">{method.description}</div>
-                  </div>
-                  <div className={`w-4 h-4 rounded-full border-2 ${
-                    selectedPaymentMethod === key ? 'border-primary bg-primary' : 'border-border'
-                  }`}>
-                    {selectedPaymentMethod === key && (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                      </div>
-                    )}
-                  </div>
-                </button>
-              ))}
+              <button
+                onClick={() => setSelectedPaymentMethod('alipay')}
+                className={`w-full p-4 border border-border rounded-lg flex items-center gap-3 transition-colors ${
+                  selectedPaymentMethod === 'alipay' ? 'border-primary bg-secondary' : 'hover:bg-muted'
+                }`}
+              >
+                <div className="text-2xl">💳</div>
+                <div className="flex-1 text-left">
+                  <div className="font-medium">支付宝</div>
+                  <div className="text-sm text-muted-foreground">扫码支付，安全快捷</div>
+                </div>
+                <div className={`w-4 h-4 rounded-full border-2 ${
+                  selectedPaymentMethod === 'alipay' ? 'border-primary bg-primary' : 'border-border'
+                }`}>
+                  {selectedPaymentMethod === 'alipay' && (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                  )}
+                </div>
+              </button>
             </div>
 
             <div className="flex space-x-3">
@@ -160,27 +161,28 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
 
             <div className="text-center mb-6">
               <div className="bg-muted p-6 rounded-lg mb-4">
-                {paymentData.qrCode && (
+                {paymentData.qrCode ? (
                   <div className="text-center">
-                    <div className="w-48 h-48 bg-card border border-border rounded-lg mx-auto mb-4 flex items-center justify-center">
-                      <div className="text-muted-foreground">
-                        <div className="text-4xl mb-2">📱</div>
-                        <div className="text-sm">{paymentMethods[selectedPaymentMethod].name}二维码</div>
-                      </div>
-                    </div>
-                    <p className="text-sm text-muted-foreground">请使用{paymentMethods[selectedPaymentMethod].name}扫描二维码</p>
+                    <img
+                      src={`https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(paymentData.qrCode)}`}
+                      alt="支付宝扫码二维码"
+                      className="w-48 h-48 mx-auto mb-4 rounded border border-border bg-white"
+                    />
+                    <p className="text-sm text-muted-foreground">请使用支付宝扫描二维码完成支付</p>
                   </div>
+                ) : (
+                  <div className="text-center text-sm text-destructive">二维码生成失败，请重试</div>
                 )}
                 {paymentData.paymentUrl && (
                   <div className="text-center">
-                    <div className="text-lg mb-4">正在跳转到{paymentMethods[selectedPaymentMethod].name}...</div>
+                    <div className="text-lg mb-4">正在跳转到支付宝...</div>
                     <a
                       href={paymentData.paymentUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-block btn btn-primary px-6 py-3"
                     >
-                      打开{paymentMethods[selectedPaymentMethod].name}
+                      打开支付宝
                     </a>
                   </div>
                 )}
