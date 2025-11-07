@@ -77,6 +77,8 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
         try { window.localStorage.removeItem('site_user') } catch {}
         setSiteUser(null)
         setIsUserMenuOpen(false)
+        // 退出后重载页面，确保授权状态与导航同步更新
+        try { window.location.reload() } catch {}
       })
   }
 
