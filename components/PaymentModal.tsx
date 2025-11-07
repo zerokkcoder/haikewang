@@ -245,7 +245,7 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
                 取消支付
               </button>
               <button
-                onClick={handlePaymentSuccess}
+                onClick={() => handlePaymentSuccess()}
                 className="flex-1 btn btn-primary"
               >
                 支付完成
