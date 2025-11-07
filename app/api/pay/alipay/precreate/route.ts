@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { getAlipay, getNotifyUrl } from '@/lib/alipay'
 import prisma from '@/lib/prisma'
+import jwt from 'jsonwebtoken'
 
 export async function POST(req: Request) {
   try {
@@ -39,10 +40,28 @@ export async function POST(req: Request) {
     }
     const qrCode = res.qrCode
 
+    // 从站点用户 Cookie 获取 userId
+    let siteUserId: number | null = null
+    try {
+      const cookieHeader = (req as any).headers.get('cookie') || ''
+      const match = cookieHeader.match(/site_token=([^;]+)/)
+      const token = match ? match[1] : ''
+      if (token) {
+        const secret = process.env.SITE_JWT_SECRET || 'site_dev_secret_change_me'
+        const payload = jwt.verify(token, secret) as any
+        siteUserId = Number(payload?.uid) || null
+      }
+    } catch {}
+
+    // 未登录直接拒绝下单（避免产生无法发放权益的订单）
+    if (!siteUserId) {
+      return NextResponse.json({ success: false, message: '请先登录后再支付' }, { status: 401 })
+    }
+
     // 二维码生成成功后再创建订单（pending）
     await prisma.order.create({
       data: {
-        userId: body?.userId ? Number(body.userId) : null,
+        userId: siteUserId,
         outTradeNo: out_trade_no,
         orderType: String(body?.orderType || 'course'),
         productId: body?.productId ? Number(body.productId) : 0,

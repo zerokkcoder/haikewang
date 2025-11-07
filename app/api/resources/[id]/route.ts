@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
+import jwt from 'jsonwebtoken'
 
 export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -18,6 +19,27 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       },
     })
     if (!r) return NextResponse.json({ success: false, message: '资源不存在' }, { status: 404 })
+
+    // 解析站点用户 Cookie，判断下载权限
+    let userId: number | null = null
+    try {
+      const cookieHeader = (req as any).headers.get('cookie') || ''
+      const match = cookieHeader.match(/site_token=([^;]+)/)
+      const token = match ? match[1] : ''
+      if (token) {
+        const secret = process.env.SITE_JWT_SECRET || 'site_dev_secret_change_me'
+        const payload = jwt.verify(token, secret) as any
+        userId = Number(payload?.uid) || null
+      }
+    } catch {}
+
+    let hasAccess = false
+    if (userId) {
+      const access = await prisma.userResourceAccess.findUnique({ where: { userId_resourceId: { userId, resourceId: idNum } } })
+      hasAccess = !!access
+    }
+    // 临时仅按“已购买课程”授权。VIP 授权依赖 Prisma Client 更新后再恢复。
+    const authorized = !!userId && hasAccess
     const data = {
       id: r.id,
       title: r.title,
@@ -26,8 +48,9 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       price: r.price,
       category: r.category ? { id: r.category.id, name: r.category.name } : null,
       subcategory: r.subcategory ? { id: r.subcategory.id, name: r.subcategory.name } : null,
-      tags: r.tags.map(t => ({ id: t.tagId, name: t.tag.name })),
-      downloads: r.downloads.map(d => ({ id: d.id, url: d.url, code: d.code })),
+      tags: r.tags.map((t: any) => ({ id: t.tagId, name: t.tag.name })),
+      downloads: authorized ? r.downloads.map((d: any) => ({ id: d.id, url: d.url, code: d.code })) : [],
+      authorized,
     }
     return NextResponse.json({ success: true, data })
   } catch (err: any) {

@@ -29,6 +29,9 @@ export default function ResourceDetailPage() {
   const [hotTags, setHotTags] = useState<{ id: number; name: string }[]>([])
   const [latestArticles, setLatestArticles] = useState<{ id: number; title: string }[]>([])
   const [guessList, setGuessList] = useState<{ id: number; title: string; coverImage: string; category: string }[]>([])
+  const [hasAccess, setHasAccess] = useState(false)
+  const [accessChecked, setAccessChecked] = useState(false)
+  const [serverAuthorized, setServerAuthorized] = useState(false)
 
   useEffect(() => {
     const load = async () => {
@@ -58,6 +61,7 @@ export default function ResourceDetailPage() {
           isVipOnly: false,
         }
         setResource(mapped)
+        setServerAuthorized(Array.isArray(r.downloads) && r.downloads.length > 0)
         // 获取上一篇/下一篇
         try {
           const pnRes = await fetch(`/api/resources/prev-next?id=${r.id}`)
@@ -104,6 +108,30 @@ export default function ResourceDetailPage() {
     load()
   }, [resourceId])
 
+  // 查询是否已购买（或VIP）
+  useEffect(() => {
+    const checkAccess = async () => {
+      try {
+        if (!resource) return
+        const raw = window.localStorage.getItem('site_user')
+        if (!raw) { setAccessChecked(true); return }
+        const u = JSON.parse(raw)
+        const username = u?.username
+        if (!username) { setAccessChecked(true); return }
+        const res = await fetch('/api/resources/access', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ resourceId: Number(resource.id), username })
+        })
+        const json = await res.json().catch(() => null)
+        if (res.ok && json?.success) {
+          setHasAccess(!!json.data?.hasAccess)
+        }
+      } catch {}
+      finally { setAccessChecked(true) }
+    }
+    checkAccess()
+  }, [resource])
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -141,10 +169,42 @@ export default function ResourceDetailPage() {
     });
   };
 
+  // 局部刷新：支付完成后重新获取当前资源详情并更新授权状态
+  const refreshResource = async () => {
+    try {
+      const res = await fetch(`/api/resources/${resourceId}`)
+      if (!res.ok) return
+      const json = await res.json().catch(() => null)
+      const r = json?.data
+      if (!r) return
+      const firstDl = Array.isArray(r.downloads) && r.downloads.length ? r.downloads[0] : null
+      const mapped = {
+        id: String(r.id),
+        title: r.title,
+        category: r.category?.name || '其他',
+        categoryId: r.category?.id || null,
+        subcategory: r.subcategory?.name || '',
+        subcategoryId: r.subcategory?.id || null,
+        description: r.content || '',
+        coverImage: r.cover || 'https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=800&h=600&fit=crop',
+        downloadUrl: firstDl?.url || '',
+        downloadCode: firstDl?.code || '',
+        price: Number(r.price || 0),
+        tags: Array.isArray(r.tags) ? r.tags.map((t: any) => t.name) : [],
+        isNew: false,
+        isPopular: false,
+        isVipOnly: false,
+      }
+      setResource(mapped)
+      setServerAuthorized(Array.isArray(r.downloads) && r.downloads.length > 0)
+      // 资源变化会触发 checkAccess 的 useEffect，自动更新 hasAccess
+    } catch {}
+  }
+
   const handleDownload = async () => {
     const restrictions = checkDownloadRestrictions(resource, currentUser);
 
-    if (!restrictions.canDownload) {
+    if (!restrictions.canDownload && !hasAccess) {
       if (!currentUser) {
         window.location.href = '/login';
         return;
@@ -156,6 +216,16 @@ export default function ResourceDetailPage() {
       }
 
       if (restrictions.requiresPayment) {
+        // 打开支付前校验会话（避免弹窗闪烁）
+        try {
+          const meRes = await fetch('/api/auth/me', { method: 'GET', credentials: 'same-origin' })
+          if (!meRes.ok) { toast('请先登录后再支付', 'info'); return }
+          const me = await meRes.json().catch(() => null)
+          if (!me?.authenticated) { toast('请先登录后再支付', 'info'); return }
+        } catch {
+          toast('请先登录后再支付', 'info');
+          return
+        }
         setShowPaymentModal(true);
         return;
       }
@@ -170,8 +240,10 @@ export default function ResourceDetailPage() {
     
     if (result.success) {
       toast(`${result.message} (交易ID: ${result.transactionId})`, 'success');
-      // In a real app, you would start the actual download here
-      // window.location.href = resource.downloadUrl;
+      // 已购买或有权限，跳转下载链接
+      if (resource.downloadUrl) {
+        window.location.href = resource.downloadUrl;
+      }
     } else {
       toast(result.message || '下载失败', 'error');
     }
@@ -281,9 +353,9 @@ export default function ResourceDetailPage() {
                 </ReactMarkdown>
               </div>
 
-              {/* Download section: always show both styles */}
+              {/* Download section: show either authorized or purchase */}
               <div className="space-y-4">
-                {/* 有下载权限时的展示 */}
+                {(serverAuthorized || hasAccess) ? (
                 <div className="border-2 border-pink-300 border-dashed rounded-md p-4">
                   <div className="flex items-center flex-wrap gap-2 text-sm md:text-base text-foreground">
                     <span>链接</span>
@@ -302,13 +374,15 @@ export default function ResourceDetailPage() {
                     >
                       复制
                     </button>
+                    {(serverAuthorized || hasAccess) && (
+                      <span className="ml-2 inline-flex items-center px-2 py-0.5 rounded bg-green-100 text-green-700 text-xs">已购买，可直接下载</span>
+                    )}
                   </div>
                   <p className="text-xs text-muted-foreground mt-2">
                     支付后点击下载按钮即可查看网盘链接，如果链接失效，可联系本站客服。
                   </p>
                 </div>
-
-                {/* 无下载权限时的展示 */}
+                ) : (
                 <div className="border-2 border-pink-300 border-dashed rounded-md p-4">
                   <div className="flex items-center flex-wrap gap-2 text-sm md:text-base text-foreground">
                     <span>资源下载价格</span>
@@ -329,6 +403,7 @@ export default function ResourceDetailPage() {
                     支付后点击下载按钮即可查看网盘链接，如果链接失效，可联系本站客服。
                   </p>
                 </div>
+                )}
               </div>
               {/* Tags inside card bottom */}
               <div className="flex flex-wrap items-center gap-2 mt-4">
@@ -384,7 +459,7 @@ export default function ResourceDetailPage() {
 
             {/* Sidebar */}
             <div className="space-y-6">
-              {/* Resource Download (always visible) */}
+              {(serverAuthorized || hasAccess) ? (
               <div className="bg-card rounded-lg shadow-sm p-6">
                 <h3 className="text-lg font-semibold text-foreground mb-4">资源下载</h3>
                 <div className="text-sm text-muted-foreground mb-2">链接:</div>
@@ -401,7 +476,7 @@ export default function ResourceDetailPage() {
                 </p>
               </div>
 
-              {/* No-permission purchase/VIP hint (always visible as requested) */}
+              ) : (
               <div className="bg-card rounded-lg shadow-sm p-6">
                 <div className="text-center mb-2">
                   <span className="text-4xl font-bold text-pink-500">{resource.price}</span>
@@ -423,6 +498,7 @@ export default function ResourceDetailPage() {
                   支付后点击下载按钮即可查看网盘链接，如果链接失效，可联系本站客服。
                 </p>
               </div>
+              )}
 
             {/* Latest Articles */}
             <div className="bg-card rounded-lg shadow-sm p-6">
@@ -493,6 +569,8 @@ export default function ResourceDetailPage() {
         onPaymentSuccess={(outTradeNo) => {
           toast(`支付成功！订单号: ${outTradeNo}`, 'success')
           setShowPaymentModal(false)
+          // 局部刷新：重新获取资源详情，更新下载权限与链接
+          refreshResource()
         }}
       />
     </div>

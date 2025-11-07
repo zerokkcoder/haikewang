@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useToast } from '@/components/Toast'
 // import { processPayment, generateOrderId, paymentMethods, createPaymentStatus } from '@/lib/payment'
 
@@ -19,9 +19,10 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
   const [isProcessing, setIsProcessing] = useState(false)
   const [paymentStep, setPaymentStep] = useState<'select' | 'processing' | 'qr' | 'success'>('select')
   const [paymentData, setPaymentData] = useState<{ qrCode?: string; paymentUrl?: string; transactionId?: string; outTradeNo?: string }>({})
+  const [isPolling, setIsPolling] = useState(false)
+  const pollRef = useRef<any>(null)
   const { toast } = useToast()
 
-  if (!isOpen) return null
 
   const handlePayment = async () => {
     setIsProcessing(true)
@@ -53,6 +54,8 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
       } else {
         setPaymentData({ qrCode: json.data.qrCode, outTradeNo: json.data.outTradeNo })
         setPaymentStep('qr')
+        // 启动状态轮询
+        startPolling(json.data.outTradeNo)
       }
     } catch (error) {
       toast('支付处理出错: ' + String(error ?? ''), 'error')
@@ -62,17 +65,26 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
     }
   }
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = (doneOutTradeNo?: string) => {
+    stopPolling()
+    // 确保订单号存在（从轮询入参或已保存的状态）
+    const ot = doneOutTradeNo || paymentData.outTradeNo || ''
+    if (ot) {
+      setPaymentData(prev => ({ ...prev, outTradeNo: ot }))
+    }
+    // 切换到成功状态卡片，短暂停留后自动关闭
     setPaymentStep('success')
     setTimeout(() => {
-      onPaymentSuccess(paymentData.outTradeNo || '')
+      toast('支付完成', 'success')
+      onPaymentSuccess(ot || '')
       onClose()
       setPaymentStep('select')
       setPaymentData({})
-    }, 2000)
+    }, 1500)
   }
 
   const handleCancel = () => {
+    stopPolling()
     if (paymentStep === 'select') {
       onClose()
     } else {
@@ -80,6 +92,39 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
       setPaymentData({})
     }
   }
+
+  const startPolling = (outTradeNo?: string) => {
+    if (!outTradeNo || isPolling) return
+    setIsPolling(true)
+    // 每 4 秒轮询一次
+    pollRef.current = setInterval(async () => {
+      try {
+        const res = await fetch('/api/pay/alipay/query', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ outTradeNo })
+        })
+        const json = await res.json().catch(() => null)
+        const status = json?.data?.status || json?.status || ''
+        if (status === 'TRADE_SUCCESS' || status === 'TRADE_FINISHED') {
+          handlePaymentSuccess(outTradeNo)
+        }
+        if (status === 'TRADE_CLOSED') {
+          toast('订单已关闭', 'error')
+          stopPolling()
+          setPaymentStep('select')
+        }
+      } catch {}
+    }, 4000)
+  }
+
+  const stopPolling = () => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current)
+      pollRef.current = null
+    }
+    setIsPolling(false)
+  }
+
+  if (!isOpen) return null
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -207,6 +252,18 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
               </button>
             </div>
           </>
+        )}
+
+        {paymentStep === 'success' && (
+          <div className="text-center py-8">
+            <div className="mx-auto mb-4 w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+              <span className="text-2xl">✅</span>
+            </div>
+            <p className="text-foreground font-medium mb-1">支付完成</p>
+            {paymentData.outTradeNo && (
+              <p className="text-sm text-muted-foreground">订单号：{paymentData.outTradeNo}</p>
+            )}
+          </div>
         )}
       </div>
     </div>

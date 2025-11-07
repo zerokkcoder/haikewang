@@ -1,0 +1,35 @@
+import { NextResponse } from 'next/server'
+import prisma from '@/lib/prisma'
+import jwt from 'jsonwebtoken'
+
+function verifyAdmin(req: Request) {
+  const cookieHeader = req.headers.get('cookie') || ''
+  const match = cookieHeader.match(/admin_token=([^;]+)/)
+  const token = match ? match[1] : ''
+  if (!token) return null
+  try {
+    const secret = process.env.ADMIN_JWT_SECRET || 'dev_secret_change_me'
+    return jwt.verify(token, secret) as any
+  } catch {
+    return null
+  }
+}
+
+export async function GET(req: Request) {
+  const admin = verifyAdmin(req)
+  if (!admin) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
+  const url = new URL(req.url)
+  const page = Math.max(1, Number(url.searchParams.get('page')) || 1)
+  const size = Math.max(1, Math.min(100, Number(url.searchParams.get('size')) || 10))
+  const skip = (page - 1) * size
+  const q = (url.searchParams.get('q') || '').trim()
+  const status = (url.searchParams.get('status') || '').trim()
+  const where: any = {}
+  if (q) where.OR = [{ outTradeNo: { contains: q } }, { productName: { contains: q } }, { orderType: { contains: q } }]
+  if (status) where.status = status
+  const [total, rows] = await Promise.all([
+    prisma.order.count({ where }),
+    prisma.order.findMany({ where, orderBy: [{ createdAt: 'desc' }], skip, take: size })
+  ])
+  return NextResponse.json({ success: true, data: rows, pagination: { page, size, total } })
+}

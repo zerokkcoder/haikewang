@@ -69,9 +69,15 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
   }, [])
 
   const handleLogout = () => {
-    try { window.localStorage.removeItem('site_user') } catch {}
-    setSiteUser(null)
-    setIsUserMenuOpen(false)
+    // 调用后端清除 httpOnly 会话 Cookie
+    fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+      .catch(() => {})
+      .finally(() => {
+        // 清除前端缓存的用户信息
+        try { window.localStorage.removeItem('site_user') } catch {}
+        setSiteUser(null)
+        setIsUserMenuOpen(false)
+      })
   }
 
   return (

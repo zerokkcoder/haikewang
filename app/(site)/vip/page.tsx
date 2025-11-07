@@ -12,9 +12,20 @@ export default function VIPPage() {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { toast } = useToast();
+  const [userVip, setUserVip] = useState<{ isVip: boolean; vipExpireAt?: string | null; vipPlanName?: string | null } | null>(null)
 
-  const handleSubscribe = (planId: number) => {
+  const handleSubscribe = async (planId: number) => {
     setSelectedPlanId(planId);
+    // 打开支付前校验会话
+    try {
+      const meRes = await fetch('/api/auth/me', { method: 'GET', credentials: 'same-origin' })
+      if (!meRes.ok) { toast('请先登录后再支付', 'info'); return }
+      const me = await meRes.json().catch(() => null)
+      if (!me?.authenticated) { toast('请先登录后再支付', 'info'); return }
+    } catch {
+      toast('请先登录后再支付', 'info');
+      return
+    }
     setShowPaymentModal(true);
   };
 
@@ -38,6 +49,25 @@ export default function VIPPage() {
     loadPlans();
   }, [toast]);
 
+  // 查询用户VIP到期时间（永久显示“永久”）
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem('site_user')
+      if (!raw) return
+      const u = JSON.parse(raw)
+      const username = u?.username
+      if (!username) return
+      fetch('/api/user/me', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username })
+      }).then(async (res) => {
+        const json = await res.json().catch(() => null)
+        if (res.ok && json?.success) {
+          setUserVip({ isVip: !!json.data?.isVip, vipExpireAt: json.data?.vipExpireAt, vipPlanName: json.data?.vipPlanName })
+        }
+      }).catch(() => {})
+    } catch {}
+  }, [])
+
   const benefits = [
     '无限下载VIP专享资源',
     '每日免费下载次数增加',
@@ -55,9 +85,12 @@ export default function VIPPage() {
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-foreground">会员计划</h1>
           <p className="text-muted-foreground mt-3">选择适合你的会员方案，立即享受更多下载权益</p>
-          {currentUser?.isVip && (
+          {userVip?.isVip && (
             <div className="mt-4 inline-flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
-              <span className="text-sm font-medium">当前状态：VIP会员</span>
+              <span className="text-sm font-medium">
+                当前状态：VIP会员
+                {userVip?.vipExpireAt ? `（到期：${new Date(userVip.vipExpireAt).toLocaleDateString()}）` : '（永久）'}
+              </span>
             </div>
           )}
         </div>

@@ -23,7 +23,7 @@ export async function POST(req: Request) {
   }
   const newStatus = statusMap[tradeStatus] || 'pending'
   try {
-    await prisma.order.update({
+    const order = await prisma.order.update({
       where: { outTradeNo },
       data: {
         tradeNo,
@@ -32,6 +32,36 @@ export async function POST(req: Request) {
         notifyRaw: params,
       },
     })
+
+    // 若订单支付成功，按类型发放权益
+    if (newStatus === 'success') {
+      if (order.orderType === 'member' && order.userId) {
+        // 会员开通：根据计划时长设置到期时间，durationDays=0 为永久
+        const plan = await prisma.membershipPlan.findUnique({ where: { id: order.productId } })
+        if (plan) {
+          let expire: Date | null = null
+          if (plan.durationDays > 0) {
+            expire = new Date()
+            expire.setDate(expire.getDate() + plan.durationDays)
+          }
+          await prisma.user.update({
+            where: { id: order.userId },
+            data: {
+              isVip: true,
+              vipPlanId: plan.id,
+              vipExpireAt: expire || null,
+            }
+          })
+        }
+      } else if (order.orderType === 'course' && order.userId) {
+        // 课程购买：记录用户资源访问授权
+        await prisma.userResourceAccess.upsert({
+          where: { userId_resourceId: { userId: order.userId, resourceId: order.productId } },
+          update: {},
+          create: { userId: order.userId, resourceId: order.productId }
+        })
+      }
+    }
   } catch (e) {
     console.warn('update order failed', e)
   }

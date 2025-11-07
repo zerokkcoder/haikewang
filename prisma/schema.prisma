@@ -60,8 +60,20 @@ model Resource {
   subcategory    Subcategory?   @relation(fields: [subcategoryId], references: [id])
   tags           ResourceTag[]
   downloads      ResourceDownload[]
+  accesses       UserResourceAccess[]
 
   @@map("resources")
+}
+
+model UserResourceAccess {
+  userId     Int
+  resourceId Int
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id])
+  resource   Resource @relation(fields: [resourceId], references: [id])
+
+  @@id([userId, resourceId])
+  @@map("user_resource_accesses")
 }
 
 model Tag {
@@ -104,7 +116,14 @@ model User {
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
 
+  // VIP membership
+  isVip         Boolean   @default(false) @map("is_vip")
+  vipPlanId     Int?      @map("vip_plan_id")
+  vipExpireAt   DateTime? @map("vip_expire_at")
+  vipPlan       MembershipPlan? @relation(fields: [vipPlanId], references: [id])
+
   orders        Order[]
+  resourceAccesses UserResourceAccess[]
 
   @@map("users")
 }
@@ -131,6 +150,8 @@ model MembershipPlan {
   features       Json?
   createdAt      DateTime  @default(now()) @map("created_at")
   updatedAt      DateTime  @updatedAt @map("updated_at")
+
+  users          User[]
 
   @@map("membership_plans")
 }
