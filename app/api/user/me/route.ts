@@ -20,6 +20,7 @@ export async function POST(req: Request) {
       vipExpireAt: user.vipExpireAt,
       vipPlanId: user.vipPlanId,
       vipPlanName: user.vipPlan?.name || null,
+      vipDailyLimit: user.vipPlan?.dailyDownloads ?? null,
       avatarUrl,
     }
     return NextResponse.json({ success: true, data })

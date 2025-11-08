@@ -36,6 +36,7 @@ export interface User {
   avatar: string;
   isVip: boolean;
   vipLevel: number;
+  vipDailyLimit?: number;
   vipExpiryDate?: string;
   dailyDownloadCount: number;
   totalDownloadCount: number;

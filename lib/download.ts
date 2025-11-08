@@ -52,17 +52,17 @@ export function checkDownloadRestrictions(resource: Resource, user: User | null)
     };
   }
 
-  // VIP daily download limit check
+  // VIP daily download limit check（优先使用用户上的 vipDailyLimit 字段）
   if (user.isVip) {
-    const vipPlan = user.vipPlan;
-    if (vipPlan && user.dailyDownloadCount >= vipPlan.dailyDownloads) {
+    const vipDailyLimit = typeof user.vipDailyLimit === 'number' && user.vipDailyLimit > 0 ? user.vipDailyLimit : 20;
+    if (user.dailyDownloadCount >= vipDailyLimit) {
       return {
         canDownload: false,
         reason: '今日下载次数已达上限',
         requiresPayment: false,
         requiresVip: false,
         remainingDownloads: 0,
-        maxDownloads: vipPlan.dailyDownloads
+        maxDownloads: vipDailyLimit
       };
     }
   }
@@ -84,9 +84,10 @@ export function checkDownloadRestrictions(resource: Resource, user: User | null)
   }
 
   // All checks passed
+  const vipDailyLimit = user.isVip && typeof user.vipDailyLimit === 'number' && user.vipDailyLimit > 0 ? user.vipDailyLimit : 20
   const remainingDownloads = user.isVip ? 
-    (user.vipPlan?.dailyDownloads || 0) - user.dailyDownloadCount : 
-    1; // Non-VIP users get 1 free download per day
+    vipDailyLimit - user.dailyDownloadCount : 
+    1
 
   return {
     canDownload: true,
@@ -94,7 +95,7 @@ export function checkDownloadRestrictions(resource: Resource, user: User | null)
     requiresPayment: false,
     requiresVip: false,
     remainingDownloads: Math.max(0, remainingDownloads),
-    maxDownloads: user.isVip ? (user.vipPlan?.dailyDownloads || 0) : 1
+    maxDownloads: user.isVip ? vipDailyLimit : 1
   };
 }
 
@@ -158,12 +159,13 @@ export function getUserDownloadQuota(user: User | null): {
     };
   }
 
-  if (user.isVip && user.vipPlan) {
+  if (user.isVip) {
+    const vipDailyLimit = typeof user.vipDailyLimit === 'number' && user.vipDailyLimit > 0 ? user.vipDailyLimit : 20
     return {
       dailyUsed: user.dailyDownloadCount,
-      dailyLimit: user.vipPlan.dailyDownloads,
+      dailyLimit: vipDailyLimit,
       isUnlimited: false,
-      canDownload: user.dailyDownloadCount < user.vipPlan.dailyDownloads
+      canDownload: user.dailyDownloadCount < vipDailyLimit
     };
   }
 
