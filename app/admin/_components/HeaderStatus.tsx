@@ -66,9 +66,9 @@ function LogoutMenu({ setMe }: { setMe: (val: any) => void }) {
   const [open, setOpen] = useState(false)
   return (
     <>
-      <button className="block w-full text-left text-sm px-3 py-2 rounded hover:bg-secondary" title="个人资料">
+      <Link href="/admin/account" className="block w-full text-left text-sm px-3 py-2 rounded hover:bg-secondary" title="个人资料">
         个人资料
-      </button>
+      </Link>
       <button
         onClick={() => setOpen(true)}
         className="block w-full text-left text-sm px-3 py-2 rounded bg-red-500 text-white hover:bg-red-600"
