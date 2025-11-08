@@ -18,8 +18,9 @@ function verifyAdmin(req: Request) {
 export async function GET(req: Request) {
   const admin = verifyAdmin(req)
   if (!admin) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 })
-  const setting = await prisma.siteSetting.findFirst()
-  return NextResponse.json({ success: true, data: setting || null })
+  const rows: any[] = await prisma.$queryRawUnsafe('SELECT * FROM site_settings LIMIT 1')
+  const setting = rows?.[0] || null
+  return NextResponse.json({ success: true, data: setting })
 }
 
 export async function PUT(req: Request) {
@@ -45,10 +46,11 @@ export async function PUT(req: Request) {
   if (body.siteSubtitle != null) displayData.site_subtitle = String(body.siteSubtitle)
 
   try {
-    const existing = await prisma.siteSetting.findFirst()
+    const rows: any[] = await prisma.$queryRawUnsafe('SELECT id, alipay_public_key FROM site_settings LIMIT 1')
+    const existing = rows?.[0]
     // 仅当尝试更新/设置 Alipay 关键字段时才强制要求公钥；若已有公钥并未改动，可允许保存站点展示配置
     const incomingPub = (data.alipayPublicKey ?? '').trim()
-    const effectivePub = incomingPub || (existing?.alipayPublicKey || '').trim()
+    const effectivePub = incomingPub || (existing?.alipay_public_key || '').trim()
     const incomingAlipayKeyChange = (
       data.alipayAppId != null ||
       data.alipayPrivateKey != null
@@ -57,29 +59,43 @@ export async function PUT(req: Request) {
       return NextResponse.json({ success: false, message: '请填写支付宝公钥' }, { status: 400 })
     }
     let saved
-    if (existing) {
-      // First update known fields via Prisma Client
-      saved = await prisma.siteSetting.update({ where: { id: existing.id }, data })
-      // Then update display fields via raw SQL to avoid Prisma Client schema lag
-      if (Object.keys(displayData).length) {
-        const sets = Object.keys(displayData).map(k => `${k} = ?`).join(', ')
-        const values = Object.values(displayData)
+    if (existing?.id) {
+      // UPDATE all provided fields via raw SQL
+      const combined: Record<string, string> = {
+        ...(data.alipayAppId != null ? { alipay_app_id: String(data.alipayAppId) } : {}),
+        ...(data.alipayPrivateKey != null ? { alipay_private_key: String(data.alipayPrivateKey) } : {}),
+        ...(data.alipayPublicKey != null ? { alipay_public_key: String(data.alipayPublicKey) } : {}),
+        ...(data.alipayGateway != null ? { alipay_gateway: String(data.alipayGateway) } : {}),
+        ...(data.alipayNotifyUrl != null ? { alipay_notify_url: String(data.alipayNotifyUrl) } : {}),
+        ...displayData,
+      }
+      if (Object.keys(combined).length) {
+        const sets = Object.keys(combined).map(k => `${k} = ?`).join(', ')
+        const values = Object.values(combined)
         await prisma.$executeRawUnsafe(`UPDATE site_settings SET ${sets} WHERE id = ?`, ...values, existing.id)
       }
     } else {
-      // Create row with known fields
-      const created = await prisma.siteSetting.create({ data })
-      saved = created
-      // Set display fields afterwards
-      if (Object.keys(displayData).length) {
-        const cols = Object.keys(displayData).join(', ')
-        const placeholders = Object.keys(displayData).map(() => '?').join(', ')
-        const values = Object.values(displayData)
-        await prisma.$executeRawUnsafe(`UPDATE site_settings SET ${cols.split(', ').map(c => `${c} = ?`).join(', ')} WHERE id = ?`, ...values, created.id)
+      // INSERT new row with provided fields
+      const combined: Record<string, string> = {
+        ...(data.alipayAppId != null ? { alipay_app_id: String(data.alipayAppId) } : {}),
+        ...(data.alipayPrivateKey != null ? { alipay_private_key: String(data.alipayPrivateKey) } : {}),
+        ...(data.alipayPublicKey != null ? { alipay_public_key: String(data.alipayPublicKey) } : {}),
+        ...(data.alipayGateway != null ? { alipay_gateway: String(data.alipayGateway) } : {}),
+        ...(data.alipayNotifyUrl != null ? { alipay_notify_url: String(data.alipayNotifyUrl) } : {}),
+        ...displayData,
+      }
+      if (Object.keys(combined).length) {
+        const cols = Object.keys(combined).join(', ')
+        const placeholders = Object.keys(combined).map(() => '?').join(', ')
+        const values = Object.values(combined)
+        await prisma.$executeRawUnsafe(`INSERT INTO site_settings (${cols}) VALUES (${placeholders})`, ...values)
+      } else {
+        await prisma.$executeRawUnsafe(`INSERT INTO site_settings () VALUES ()`)
       }
     }
     // 统一返回最新数据
-    const latest = await prisma.siteSetting.findFirst()
+    const latestRows: any[] = await prisma.$queryRawUnsafe('SELECT * FROM site_settings LIMIT 1')
+    const latest = latestRows?.[0] || null
     return NextResponse.json({ success: true, data: latest })
   } catch (err: any) {
     return NextResponse.json({ success: false, message: err?.message || '保存失败' }, { status: 500 })

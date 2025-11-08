@@ -8,6 +8,11 @@ export async function POST(req: Request) {
     if (!username) return NextResponse.json({ success: false, message: '缺少用户名' }, { status: 400 })
     const user = await prisma.user.findUnique({ where: { username }, include: { vipPlan: true } })
     if (!user) return NextResponse.json({ success: false, message: '用户不存在' }, { status: 404 })
+    let avatarUrl: string | null = null
+    try {
+      const rows: any[] = await prisma.$queryRawUnsafe('SELECT avatar_url FROM users WHERE id = ? LIMIT 1', user.id)
+      avatarUrl = rows?.[0]?.avatar_url ?? null
+    } catch {}
     const data = {
       id: user.id,
       username: user.username,
@@ -15,7 +20,7 @@ export async function POST(req: Request) {
       vipExpireAt: user.vipExpireAt,
       vipPlanId: user.vipPlanId,
       vipPlanName: user.vipPlan?.name || null,
-      avatarUrl: user.avatarUrl || null,
+      avatarUrl,
     }
     return NextResponse.json({ success: true, data })
   } catch (err: any) {

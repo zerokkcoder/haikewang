@@ -27,7 +27,7 @@ export default function SubcategoryPage() {
   const loadedIdsRef = useRef<Set<number>>(new Set())
   const [hasMore, setHasMore] = useState(true)
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false)
-  const [sort, setSort] = useState<'latest' | 'downloads' | 'views' | 'comments'>('latest')
+  const [sort, setSort] = useState<'latest' | 'downloads' | 'views'>('latest')
   const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export default function SubcategoryPage() {
     return () => observer.disconnect()
   }, [autoLoadEnabled, displayedResources.length, isLoading, page, total])
 
-  const handleSortChange = (nextSort: 'latest' | 'downloads' | 'views' | 'comments') => {
+  const handleSortChange = (nextSort: 'latest' | 'downloads' | 'views') => {
     if (sort === nextSort) return
     setDisplayedResources([])
     setTotal(0)

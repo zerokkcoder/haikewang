@@ -33,12 +33,12 @@ export async function GET(req: Request) {
     // 排序：latest(默认) / downloads / views / comments
     const orderBy =
       sortParam === 'downloads'
-        ? [{ downloadCount: 'desc' }]
+        ? [{ downloadCount: 'desc' as const }]
         : sortParam === 'views'
-        ? [{ viewCount: 'desc' }]
+        ? [{ viewCount: 'desc' as const }]
         : sortParam === 'comments'
-        ? [{ hotScore: 'desc' }]
-        : [{ id: 'desc' }]
+        ? [{ hotScore: 'desc' as const }]
+        : [{ id: 'desc' as const }]
 
     // Debug log: observe incoming requests and parameters during development
     console.log(`[API /resources] page=${page} size=${size} q="${q}" categoryId=${categoryId ?? ''} subcategoryId=${subcategoryId ?? ''} tagId=${tagId ?? ''} sort=${sortParam}`) // eslint-disable-line no-console

@@ -2,12 +2,16 @@ import { AlipaySdk } from 'alipay-sdk'
 import prisma from '@/lib/prisma'
 
 export async function getAlipay() {
-  // Prefer database settings; fallback to env
-  const setting = await prisma.siteSetting.findFirst().catch(() => null)
-  const appId = setting?.alipayAppId || process.env.ALIPAY_APP_ID
-  const privateKey = setting?.alipayPrivateKey || process.env.ALIPAY_PRIVATE_KEY
-  const alipayPublicKey = setting?.alipayPublicKey || process.env.ALIPAY_PUBLIC_KEY
-  const gateway = setting?.alipayGateway || process.env.ALIPAY_GATEWAY || 'https://openapi.alipay.com/gateway.do'
+  // Prefer database settings; fallback to env (use raw SQL to avoid schema generation issues)
+  let setting: any = null
+  try {
+    const rows: any[] = await prisma.$queryRawUnsafe('SELECT alipay_app_id, alipay_private_key, alipay_public_key, alipay_gateway FROM site_settings LIMIT 1')
+    setting = rows?.[0] || null
+  } catch {}
+  const appId = setting?.alipay_app_id || process.env.ALIPAY_APP_ID
+  const privateKey = setting?.alipay_private_key || process.env.ALIPAY_PRIVATE_KEY
+  const alipayPublicKey = setting?.alipay_public_key || process.env.ALIPAY_PUBLIC_KEY
+  const gateway = setting?.alipay_gateway || process.env.ALIPAY_GATEWAY || 'https://openapi.alipay.com/gateway.do'
 
   if (!appId || !privateKey || !alipayPublicKey) {
     throw new Error('Alipay config missing: ALIPAY_APP_ID / PRIVATE_KEY / PUBLIC_KEY')
@@ -25,6 +29,11 @@ export async function getAlipay() {
 }
 
 export async function getNotifyUrl() {
-  const setting = await prisma.siteSetting.findFirst().catch(() => null)
-  return setting?.alipayNotifyUrl || process.env.ALIPAY_NOTIFY_URL || ''
+  try {
+    const rows: any[] = await prisma.$queryRawUnsafe('SELECT alipay_notify_url FROM site_settings LIMIT 1')
+    const r = rows?.[0]
+    return r?.alipay_notify_url || process.env.ALIPAY_NOTIFY_URL || ''
+  } catch {
+    return process.env.ALIPAY_NOTIFY_URL || ''
+  }
 }

@@ -87,8 +87,8 @@ export default function Home() {
         subcategoryId: r.subcategoryId,
       }))
       // 以 ref 跟踪已加载的唯一 ID，过滤掉重复项
-      const filtered = next.filter(item => !loadedIdsRef.current.has(item.id))
-      filtered.forEach(item => loadedIdsRef.current.add(item.id))
+      const filtered = next.filter((item: { id: number }) => !loadedIdsRef.current.has(item.id))
+      filtered.forEach((item: { id: number }) => loadedIdsRef.current.add(item.id))
       setDisplayedResources(prev => [...prev, ...filtered])
       const loadedCount = loadedIdsRef.current.size
       nextHasMoreFlag = (filtered.length > 0) && (computedTotal === 0 || loadedCount < computedTotal)
