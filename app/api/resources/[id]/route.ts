@@ -34,12 +34,18 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     } catch {}
 
     let hasAccess = false
+    let isVip = false
     if (userId) {
-      const access = await prisma.userResourceAccess.findUnique({ where: { userId_resourceId: { userId, resourceId: idNum } } })
+      const [access, user] = await Promise.all([
+        prisma.userResourceAccess.findUnique({ where: { userId_resourceId: { userId, resourceId: idNum } } }),
+        prisma.user.findUnique({ where: { id: userId }, select: { isVip: true, vipExpireAt: true } }),
+      ])
       hasAccess = !!access
+      const now = new Date()
+      isVip = !!user?.isVip && (!!user?.vipExpireAt ? (new Date(user.vipExpireAt) > now) : true)
     }
-    // 临时仅按“已购买课程”授权。VIP 授权依赖 Prisma Client 更新后再恢复。
-    const authorized = !!userId && hasAccess
+    // 授权：已购买或 VIP 用户均可下载
+    const authorized = !!userId && (hasAccess || isVip)
     const data = {
       id: r.id,
       title: r.title,

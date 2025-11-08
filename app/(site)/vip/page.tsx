@@ -12,7 +12,7 @@ export default function VIPPage() {
   const [loading, setLoading] = useState(true);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const { toast } = useToast();
-  const [userVip, setUserVip] = useState<{ isVip: boolean; vipExpireAt?: string | null; vipPlanName?: string | null } | null>(null)
+  const [userVip, setUserVip] = useState<{ isVip: boolean; vipExpireAt?: string | null; vipPlanName?: string | null; vipPlanId?: number | null } | null>(null)
 
   const handleSubscribe = async (planId: number) => {
     setSelectedPlanId(planId);
@@ -26,6 +26,17 @@ export default function VIPPage() {
       toast('请先登录后再支付', 'info');
       return
     }
+    // 若当前用户已是该会员且未过期/永久，则不需要再次开通
+    try {
+      const now = new Date()
+      const selected = plans.find(p => p.id === planId)
+      const isSamePlan = userVip?.vipPlanId ? (userVip.vipPlanId === planId) : (userVip?.vipPlanName && selected ? userVip.vipPlanName === selected.name : false)
+      const notExpired = userVip?.vipExpireAt ? (new Date(userVip.vipExpireAt) > now) : true
+      if (userVip?.isVip && isSamePlan && notExpired) {
+        toast('您已是该会员计划（未过期/永久），无需再次开通', 'info')
+        return
+      }
+    } catch {}
     setShowPaymentModal(true);
   };
 
@@ -62,7 +73,7 @@ export default function VIPPage() {
       }).then(async (res) => {
         const json = await res.json().catch(() => null)
         if (res.ok && json?.success) {
-          setUserVip({ isVip: !!json.data?.isVip, vipExpireAt: json.data?.vipExpireAt, vipPlanName: json.data?.vipPlanName })
+          setUserVip({ isVip: !!json.data?.isVip, vipExpireAt: json.data?.vipExpireAt, vipPlanName: json.data?.vipPlanName, vipPlanId: json.data?.vipPlanId ?? null })
         }
       }).catch(() => {})
     } catch {}
@@ -88,7 +99,7 @@ export default function VIPPage() {
           {userVip?.isVip && (
             <div className="mt-4 inline-flex items-center gap-2 bg-secondary rounded-lg px-3 py-2">
               <span className="text-sm font-medium">
-                当前状态：VIP会员
+                当前状态：{userVip?.vipPlanName || 'VIP会员'}
                 {userVip?.vipExpireAt ? `（到期：${new Date(userVip.vipExpireAt).toLocaleDateString()}）` : '（永久）'}
               </span>
             </div>
@@ -111,7 +122,7 @@ export default function VIPPage() {
               >
                 {plan.isPopular && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                    <span className="bg-gradient-to-r from-purple-500 to-blue-500 text-white px-3 py-0.5 rounded-full text-xs font-medium">
+                    <span className="bg-linear-to-r from-purple-500 to-blue-500 text-white px-3 py-0.5 rounded-full text-xs font-medium">
                       最受欢迎
                     </span>
                   </div>
@@ -131,7 +142,7 @@ export default function VIPPage() {
                 <ul className="space-y-3 mb-8">
                   {plan.features.map((feature, index) => (
                     <li key={index} className="flex items-center gap-3">
-                      <CheckIcon className="h-5 w-5 text-green-500 flex-shrink-0" />
+                      <CheckIcon className="h-5 w-5 text-green-500 shrink-0" />
                       <span className="text-foreground">{feature}</span>
                     </li>
                   ))}
@@ -141,11 +152,11 @@ export default function VIPPage() {
                   onClick={() => handleSubscribe(plan.id)}
                   className={`w-full py-3 px-6 rounded-lg font-medium transition-colors ${
                     plan.isPopular
-                      ? 'bg-gradient-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
+                      ? 'bg-linear-to-r from-purple-500 to-blue-500 text-white hover:from-purple-600 hover:to-blue-600'
                       : 'bg-primary text-primary-foreground hover:bg-primary/90'
                   }`}
                 >
-                  {currentUser?.isVip ? '续费会员' : '立即开通'}
+                  {userVip?.isVip ? '续费会员' : '立即开通'}
                 </button>
               </div>
             ))}
