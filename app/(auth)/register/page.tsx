@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@/components/Toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -189,18 +190,11 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/" className="text-3xl font-bold text-primary">
-            资源下载站
-          </Link>
-          <p className="text-muted-foreground mt-2">创建您的账户，开始下载优质资源</p>
-        </div>
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/auth_bg_animated.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="max-w-md w-full mx-auto px-4">
 
         {/* Register Form */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+        <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
@@ -336,7 +330,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="w-full rounded-lg bg-pink-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center justify-center">

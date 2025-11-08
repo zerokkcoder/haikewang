@@ -115,6 +115,7 @@ model User {
   emailVerified Boolean  @default(false) @map("email_verified")
   createdAt     DateTime @default(now()) @map("created_at")
   updatedAt     DateTime @updatedAt @map("updated_at")
+  avatarUrl     String?  @map("avatar_url")
 
   // VIP membership
   isVip         Boolean   @default(false) @map("is_vip")

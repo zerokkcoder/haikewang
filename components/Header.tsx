@@ -21,7 +21,7 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
   const [navCategories, setNavCategories] = useState<NavCategory[]>(initialCategories)
   const [openCategoryId, setOpenCategoryId] = useState<number | null>(null)
-  const [siteUser, setSiteUser] = useState<{ username: string; isVip: boolean } | null>(currentUser ?? null)
+  const [siteUser, setSiteUser] = useState<{ username: string; isVip: boolean; avatarUrl?: string } | null>(currentUser ?? null)
   const closeTimerRef = useRef<number | null>(null)
 
   useEffect(() => {
@@ -64,7 +64,7 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
       if (raw) {
         const parsed = JSON.parse(raw)
         if (parsed && typeof parsed.username === 'string') {
-          setSiteUser({ username: parsed.username, isVip: !!parsed.isVip })
+          setSiteUser({ username: parsed.username, isVip: !!parsed.isVip, avatarUrl: parsed.avatarUrl })
         }
       }
     } catch {}
@@ -178,7 +178,11 @@ export default function Header({ currentUser, initialCategories = [] }: HeaderPr
                   onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                   className="flex items-center gap-2 text-foreground hover:text-primary"
                 >
-                  <UserCircleIcon className="w-6 h-6" />
+                  {siteUser?.avatarUrl ? (
+                    <img src={siteUser.avatarUrl} alt="avatar" className="w-6 h-6 rounded-full object-cover" />
+                  ) : (
+                    <UserCircleIcon className="w-6 h-6" />
+                  )}
                   <span className="hidden sm:block text-sm font-medium">
                     {siteUser.username}
                   </span>

@@ -15,6 +15,7 @@ export async function POST(req: Request) {
       vipExpireAt: user.vipExpireAt,
       vipPlanId: user.vipPlanId,
       vipPlanName: user.vipPlan?.name || null,
+      avatarUrl: user.avatarUrl || null,
     }
     return NextResponse.json({ success: true, data })
   } catch (err: any) {

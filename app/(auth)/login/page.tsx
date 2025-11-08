@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useToast } from '@/components/Toast';
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
@@ -31,7 +32,22 @@ export default function LoginPage() {
         try {
           const u = json?.data
           if (u && u.username) {
-            window.localStorage.setItem('site_user', JSON.stringify({ username: u.username, isVip: false }))
+            // 可选：登录后同步从 /api/user/me 拉取 avatarUrl 和 VIP 状态
+            let avatarUrl: string | undefined
+            let isVip = false
+            try {
+              const meRes = await fetch('/api/user/me', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: u.username })
+              })
+              const meJson = await meRes.json().catch(() => ({}))
+              if (meRes.ok && meJson?.success) {
+                avatarUrl = meJson?.data?.avatarUrl || undefined
+                isVip = !!meJson?.data?.isVip
+              }
+            } catch {}
+            window.localStorage.setItem('site_user', JSON.stringify({ username: u.username, isVip, avatarUrl }))
           }
         } catch {}
         window.location.href = '/'
@@ -52,90 +68,33 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center px-4">
-      <div className="max-w-md w-full">
-        {/* Logo */}
-        <div className="text-center mb-6">
-          <Link href="/" className="text-3xl font-bold text-primary">
-            资源下载站
-          </Link>
-          <p className="text-muted-foreground mt-2">欢迎回来，请登录您的账户</p>
-        </div>
-
-        {/* Login Form */}
-        <div className="bg-white rounded-lg shadow-lg p-8">
+    <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/auth_bg_animated.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="max-w-md w-full mx-auto px-4">
+        <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">
-                用户名或邮箱
-              </label>
-              <input
-                type="text"
-                id="username"
-                name="username"
-                value={formData.username}
-                onChange={handleChange}
-                required
-                className="w-full px-3 py-2 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                placeholder="请输入用户名或邮箱"
-              />
+              <label htmlFor="username" className="block text-sm font-medium text-foreground mb-2">用户名或邮箱</label>
+              <input type="text" id="username" name="username" value={formData.username} onChange={handleChange} required className="input w-full" placeholder="请输入用户名或邮箱" />
             </div>
-
             <div>
-              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">
-                密码
-              </label>
+              <label htmlFor="password" className="block text-sm font-medium text-foreground mb-2">密码</label>
               <div className="relative">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  id="password"
-                  name="password"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className="w-full px-3 py-2 pr-10 border border-border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
-                  placeholder="请输入密码"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground"
-                >
-                  {showPassword ? (
-                    <EyeSlashIcon className="h-5 w-5" />
-                  ) : (
-                    <EyeIcon className="h-5 w-5" />
-                  )}
+                <input type={showPassword ? 'text' : 'password'} id="password" name="password" value={formData.password} onChange={handleChange} required className="input w-full pr-10" placeholder="请输入密码" />
+                <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted-foreground hover:text-foreground" aria-label="切换显示密码">
+                  {showPassword ? (<EyeSlashIcon className="h-5 w-5" />) : (<EyeIcon className="h-5 w-5" />)}
                 </button>
               </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-2 px-4 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
+            <button type="submit" disabled={loading} className="w-full rounded-lg bg-pink-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                  登录中...
-                </div>
-              ) : (
-                '登录'
-              )}
+                <div className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div><span>登录中...</span></div>
+              ) : ('登录')}
             </button>
+            <div className="flex items-center justify-between">
+              <Link href="/forgot-password" className="text-sm text-primary hover:underline font-medium">忘记密码？</Link>
+              <Link href="/register" className="text-sm text-primary hover:underline font-medium">立即注册</Link>
+            </div>
           </form>
-          
-          <div className="flex items-center justify-between mt-2">
-              {/* Forgot Password Link */}
-              <Link href="/forgot-password" className="text-sm text-primary hover:underline font-medium">
-                忘记密码？
-              </Link>
-               {/* Register Link */}
-              <Link href="/register" className="text-sm text-primary hover:underline font-medium">
-                立即注册
-              </Link>
-          </div>
         </div>
       </div>
     </div>
