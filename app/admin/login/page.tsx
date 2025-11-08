@@ -80,7 +80,7 @@ export default function AdminLoginPage() {
             {loading ? '登录中…' : '登录管理后台'}
           </button>
         </form>
-        <p className="text-xs text-muted-foreground mt-4">该页面为演示登录界面。登录后会跳转到后台首页。</p>
+        
       </div>
     </div>
   )
