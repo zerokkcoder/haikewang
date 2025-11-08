@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/components/Toast';
@@ -14,6 +14,20 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
+  const [siteConfig, setSiteConfig] = useState<{ siteLogo?: string | null; siteName?: string | null } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -70,6 +84,12 @@ export default function LoginPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/auth_bg_animated.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="max-w-md w-full mx-auto px-4">
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center gap-2">
+            <img src={siteConfig?.siteLogo || '/logo.png'} alt="logo" className="w-8 h-8 object-contain" />
+            <span className="text-lg font-semibold text-foreground">{siteConfig?.siteName || '骇课网'}</span>
+          </div>
+        </div>
         <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
@@ -85,7 +105,7 @@ export default function LoginPage() {
                 </button>
               </div>
             </div>
-            <button type="submit" disabled={loading} className="w-full rounded-lg bg-pink-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
+            <button type="submit" disabled={loading} className="w-full rounded-lg bg-violet-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed">
               {loading ? (
                 <div className="flex items-center justify-center"><div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div><span>登录中...</span></div>
               ) : ('登录')}

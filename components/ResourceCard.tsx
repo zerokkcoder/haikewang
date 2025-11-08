@@ -39,7 +39,7 @@ export default function ResourceCard({ resource, index = 0 }: ResourceCardProps)
           {resource.categoryId ? (
             <Link
               href={resource.subcategoryId ? `/category/${resource.categoryId}/${resource.subcategoryId}` : `/category/${resource.categoryId}`}
-              className="flex items-center text-xs md:text-sm text-muted-foreground hover:text-pink-500"
+              className="flex items-center text-xs md:text-sm text-muted-foreground hover:text-violet-500"
             >
               <span className="inline-block w-1.5 h-1.5 rounded-full border border-red-500 mr-2"></span>
               {resource.category}

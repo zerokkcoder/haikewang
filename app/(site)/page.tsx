@@ -162,7 +162,7 @@ export default function Home() {
   }
 
   const showSearchView = (searchParams.get('q') !== null)
-  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null; siteSlogan?: string | null } | null>(null)
+  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null; siteSlogan?: string | null; siteSubtitle?: string | null } | null>(null)
 
   useEffect(() => {
     const controller = new AbortController()
@@ -184,7 +184,7 @@ export default function Home() {
         <section>
           <div className="relative w-full h-64 md:h-72 overflow-hidden rounded-lg border border-border bg-card">
             <Image
-              src={siteConfig?.heroImage || "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=600&fit=crop"}
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Hero"
               fill
               className="object-cover"
@@ -194,7 +194,7 @@ export default function Home() {
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-full text-white">
                 <div className="w-full animate-fadeIn flex flex-col items-center justify-center text-center">
-                  <h1 className="text-3xl md:text-4xl font-bold mb-4">优课网，卷王必备的资源平台</h1>
+                  <h1 className="text-3xl md:text-4xl font-bold mb-4">{siteConfig?.siteSubtitle || '骇课网，卷王必备的资源平台'}</h1>
                   <p className="text-base md:text-lg mb-4 opacity-90">{siteConfig?.siteSlogan || '海量优质资源，快速检索，一键下载'}</p>
                   <form onSubmit={handleSearchSubmit} className="flex items-center justify-center w-full max-w-md mx-auto bg-white rounded-full shadow">
                     <input
@@ -204,7 +204,7 @@ export default function Home() {
                       onChange={(e) => setQuery(e.target.value)}
                       className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-5 md:pl-6"
                     />
-                    <button type="submit" className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
+                    <button type="submit" className="w-10 h-10 rounded-full bg-violet-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
                       <MagnifyingGlassIcon className="w-5 h-5" />
                     </button>
                   </form>
@@ -219,7 +219,7 @@ export default function Home() {
         <section>
           <div className="relative w-full h-40 md:h-48 overflow-hidden rounded-lg border border-border bg-card">
             <Image
-              src={siteConfig?.heroImage || "https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=400&fit=crop"}
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Search Header"
               fill
               className="object-cover"
@@ -236,7 +236,7 @@ export default function Home() {
                     onChange={(e) => setQuery(e.target.value)}
                     className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-5 md:pl-6"
                   />
-                  <button type="submit" className="w-10 h-10 rounded-full bg-pink-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
+                  <button type="submit" className="w-10 h-10 rounded-full bg-violet-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
                     <MagnifyingGlassIcon className="w-5 h-5" />
                   </button>
                 </form>
@@ -247,13 +247,13 @@ export default function Home() {
             <div className="rounded-lg border border-border bg-card p-3 text-sm">
               <div className="flex items-center gap-3 mb-2">
                 <span className="text-muted-foreground">分类</span>
-                <span className="px-2 py-0.5 rounded-full bg-pink-500 text-white">全部</span>
+                <span className="px-2 py-0.5 rounded-full bg-violet-500 text-white">全部</span>
               </div>
             <div className="flex items-center gap-3">
                 <span className="text-muted-foreground">排序</span>
-                <button onClick={() => handleSortChange('latest')} className={`px-2 py-0.5 rounded-full ${sort==='latest' ? 'bg-pink-500 text-white' : 'text-black'}`}>最新发布</button>
-                <button onClick={() => handleSortChange('downloads')} className={`px-2 py-0.5 rounded-full ${sort==='downloads' ? 'bg-pink-500 text-white' : 'text-black'}`}>下载最多</button>
-                <button onClick={() => handleSortChange('views')} className={`px-2 py-0.5 rounded-full ${sort==='views' ? 'bg-pink-500 text-white' : 'text-black'}`}>浏览最多</button>
+                <button onClick={() => handleSortChange('latest')} className={`px-2 py-0.5 rounded-full ${sort==='latest' ? 'bg-violet-500 text-white' : 'text-black'}`}>最新发布</button>
+                <button onClick={() => handleSortChange('downloads')} className={`px-2 py-0.5 rounded-full ${sort==='downloads' ? 'bg-violet-500 text-white' : 'text-black'}`}>下载最多</button>
+                <button onClick={() => handleSortChange('views')} className={`px-2 py-0.5 rounded-full ${sort==='views' ? 'bg-violet-500 text-white' : 'text-black'}`}>浏览最多</button>
             </div>
             </div>
           </div>

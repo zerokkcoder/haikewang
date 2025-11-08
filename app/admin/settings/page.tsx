@@ -9,6 +9,14 @@ type Settings = {
   alipayPublicKey?: string | null
   alipayGateway?: string | null
   alipayNotifyUrl?: string | null
+  siteSubtitle?: string | null
+  siteName?: string | null
+  siteLogo?: string | null
+  siteSlogan?: string | null
+  siteKeywords?: string | null
+  siteDescription?: string | null
+  heroImage?: string | null
+  footerText?: string | null
 }
 
 export default function AdminSettingsPage() {
@@ -161,6 +169,10 @@ export default function AdminSettingsPage() {
               <div>
                 <label className="block text-sm text-muted-foreground mb-1">网站名称</label>
                 <input name="siteName" value={settings?.siteName || ''} onChange={handleChange} className="input w-full" placeholder="如：酷库下载" />
+              </div>
+              <div>
+                <label className="block text-sm text-muted-foreground mb-1">站点副标题（首页 H1）</label>
+                <input name="siteSubtitle" value={settings?.siteSubtitle || ''} onChange={handleChange} className="input w-full" placeholder="如：骇课网，学习更高效" />
               </div>
               <div>
                 <label className="block text-sm text-muted-foreground mb-1">网站 Slogan</label>

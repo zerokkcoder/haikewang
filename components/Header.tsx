@@ -137,14 +137,14 @@ export default function Header({ currentUser, initialCategories = [], initialSit
                   <div className="flex items-center gap-1">
                     <Link
                       href={`/category/${category.id}`}
-                      className={`flex items-center gap-1 text-foreground hover:text-pink-500 pb-0.5 border-b-2 ${pathname?.startsWith(`/category/${category.id}`) ? 'border-pink-500' : 'border-transparent'}`}
+                      className={`flex items-center gap-1 text-foreground hover:text-violet-500 pb-0.5 border-b-2 ${pathname?.startsWith(`/category/${category.id}`) ? 'border-violet-500' : 'border-transparent'}`}
                     >
                       <span className="text-sm">{category.name}</span>
                     </Link>
                     {hasSubs && (
                       <button
                         aria-label={isOpen ? '收起子类' : '展开子类'}
-                        className="p-1 text-muted-foreground hover:text-pink-500"
+                        className="p-1 text-muted-foreground hover:text-violet-500"
                         onClick={() => setOpenCategoryId(isOpen ? null : category.id)}
                       >
                         {isOpen ? <ChevronUpIcon className="w-4 h-4" /> : <ChevronDownIcon className="w-4 h-4" />}
@@ -172,7 +172,7 @@ export default function Header({ currentUser, initialCategories = [], initialSit
                           <Link
                             key={subcategory.id}
                             href={`/category/${category.id}/${subcategory.id}`}
-                            className="block px-3 py-2 text-sm text-muted-foreground hover:text-pink-500 hover:bg-secondary"
+                            className="block px-3 py-2 text-sm text-muted-foreground hover:text-violet-500 hover:bg-secondary"
                           >
                             {subcategory.name}
                           </Link>
@@ -263,7 +263,7 @@ export default function Header({ currentUser, initialCategories = [], initialSit
                 <div key={category.id}>
                   <Link
                     href={`/category/${category.id}`}
-                    className={`flex items-center gap-2 px-4 py-2 text-foreground hover:text-pink-500 hover:bg-secondary rounded-md ${pathname?.startsWith(`/category/${category.id}`) ? 'underline underline-offset-4 decoration-2 decoration-pink-500' : ''}`}
+                    className={`flex items-center gap-2 px-4 py-2 text-foreground hover:text-violet-500 hover:bg-secondary rounded-md ${pathname?.startsWith(`/category/${category.id}`) ? 'underline underline-offset-4 decoration-2 decoration-violet-500' : ''}`}
                     onClick={() => setIsMenuOpen(false)}
                   >
                     <span className="inline-block w-2 h-2 rounded-full bg-muted-foreground" aria-hidden="true" />

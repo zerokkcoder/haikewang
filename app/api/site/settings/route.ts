@@ -3,16 +3,19 @@ import prisma from '@/lib/prisma'
 
 export async function GET() {
   try {
-    const s = await prisma.siteSetting.findFirst()
-    if (!s) return NextResponse.json({ success: true, data: null })
+    // 使用原生查询，避免 Prisma Client 未生成新字段导致读取不到的情况
+    const rows: any[] = await prisma.$queryRawUnsafe('SELECT site_name, site_logo, site_slogan, site_keywords, site_description, hero_image, footer_text, site_subtitle FROM site_settings LIMIT 1')
+    const r = rows?.[0]
+    if (!r) return NextResponse.json({ success: true, data: null })
     const data = {
-      siteName: s.siteName || null,
-      siteLogo: s.siteLogo || null,
-      siteSlogan: s.siteSlogan || null,
-      siteKeywords: s.siteKeywords || null,
-      siteDescription: s.siteDescription || null,
-      heroImage: s.heroImage || null,
-      footerText: s.footerText || null,
+      siteName: r.site_name ?? null,
+      siteLogo: r.site_logo ?? null,
+      siteSlogan: r.site_slogan ?? null,
+      siteKeywords: r.site_keywords ?? null,
+      siteDescription: r.site_description ?? null,
+      heroImage: r.hero_image ?? null,
+      footerText: r.footer_text ?? null,
+      siteSubtitle: r.site_subtitle ?? null,
     }
     return NextResponse.json({ success: true, data })
   } catch (err: any) {

@@ -200,6 +200,7 @@ model SiteSetting {
   siteDescription String?  @db.Text @map("site_description")
   heroImage       String?  @map("hero_image")
   footerText      String?  @db.Text @map("footer_text")
+  siteSubtitle    String?  @map("site_subtitle")
 
   @@map("site_settings")
 }

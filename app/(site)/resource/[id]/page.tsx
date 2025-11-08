@@ -356,14 +356,14 @@ export default function ResourceDetailPage() {
               {/* Download section: show either authorized or purchase */}
               <div className="space-y-4">
                 {(serverAuthorized || hasAccess) ? (
-                <div className="border-2 border-pink-300 border-dashed rounded-md p-4">
+                <div className="border-2 border-violet-300 border-dashed rounded-md p-4">
                   <div className="flex items-center flex-wrap gap-2 text-sm md:text-base text-foreground">
                     <span>链接</span>
                     <a
                       href={resource.downloadUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="rounded-full bg-pink-500 text-white px-3 py-1 text-xs md:text-sm hover:opacity-90"
+                      className="rounded-full bg-violet-500 text-white px-3 py-1 text-xs md:text-sm hover:opacity-90"
                     >
                       点击下载
                     </a>
@@ -372,7 +372,7 @@ export default function ResourceDetailPage() {
                         <span className="text-sm text-muted-foreground">（提取码: {extractionCode}）</span>
                         <button
                           onClick={copyExtractionCode}
-                          className="text-pink-500 hover:underline text-xs md:text-sm"
+                          className="text-violet-500 hover:underline text-xs md:text-sm"
                         >
                           复制
                         </button>
@@ -387,13 +387,13 @@ export default function ResourceDetailPage() {
                   </p>
                 </div>
                 ) : (
-                <div className="border-2 border-pink-300 border-dashed rounded-md p-4">
+                <div className="border-2 border-violet-300 border-dashed rounded-md p-4">
                   <div className="flex items-center flex-wrap gap-2 text-sm md:text-base text-foreground">
                     <span>资源下载价格</span>
-                    <span className="font-semibold text-pink-500">{resource.price} 元</span>
+                    <span className="font-semibold text-violet-500">{resource.price} 元</span>
                     <button
                       onClick={handleDownload}
-                      className="rounded-full bg-pink-500 text-white px-3 py-1 text-xs md:text-sm hover:opacity-90"
+                      className="rounded-full bg-violet-500 text-white px-3 py-1 text-xs md:text-sm hover:opacity-90"
                     >
                       立即交易
                     </button>
@@ -472,7 +472,7 @@ export default function ResourceDetailPage() {
                   href={resource.downloadUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="block rounded-lg bg-pink-500 text-white text-center py-3 hover:opacity-90"
+                  className="block rounded-lg bg-violet-500 text-white text-center py-3 hover:opacity-90"
                 >
                   点击下载
                 </a>
@@ -484,7 +484,7 @@ export default function ResourceDetailPage() {
               ) : (
               <div className="bg-card rounded-lg shadow-sm p-6">
                 <div className="text-center mb-2">
-                  <span className="text-4xl font-bold text-pink-500">{resource.price}</span>
+                  <span className="text-4xl font-bold text-violet-500">{resource.price}</span>
                   <span className="ml-1 text-base text-foreground">元</span>
                 </div>
                 <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mb-3">
@@ -495,7 +495,7 @@ export default function ResourceDetailPage() {
                 </div>
                 <button
                   onClick={handleDownload}
-                  className="w-full rounded-lg bg-pink-500 text-white py-3 hover:opacity-90"
+                  className="w-full rounded-lg bg-violet-500 text-white py-3 hover:opacity-90"
                 >
                   立即交易
                 </button>

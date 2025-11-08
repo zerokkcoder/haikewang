@@ -4,12 +4,26 @@ import { usePathname } from "next/navigation";
 import "../globals.css";
 import HeaderStatus from "./_components/HeaderStatus";
 import { HomeIcon, Squares2X2Icon, DocumentIcon, ChevronDoubleLeftIcon, ChevronDoubleRightIcon, TagIcon, UserIcon, StarIcon, CreditCardIcon, Cog6ToothIcon } from "@heroicons/react/24/outline";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export default function AdminLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const pathname = usePathname()
   const isLogin = pathname === "/admin/login"
   const [collapsed, setCollapsed] = useState(false)
+  const [siteConfig, setSiteConfig] = useState<{ siteLogo?: string | null; siteName?: string | null } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
+  }, [])
 
   if (isLogin) {
     return <div className="min-h-screen bg-background antialiased">{children}</div>
@@ -20,7 +34,7 @@ export default function AdminLayout({ children }: Readonly<{ children: React.Rea
       <header className="bg-card shadow-sm">
         <div className="w-full mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="inline-flex items-center justify-center w-8 h-8 rounded bg-pink-500 text-white font-bold">A</span>
+            <img src={siteConfig?.siteLogo || '/logo.png'} alt="logo" className="w-8 h-8 rounded object-contain" />
             <span className="text-lg font-semibold text-foreground">管理后台</span>
             <button
               aria-label={collapsed ? '展开菜单' : '收起菜单'}

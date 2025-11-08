@@ -23,6 +23,7 @@ export default function ProfilePage() {
   const [uploading, setUploading] = useState(false)
   const [recentDownloads, setRecentDownloads] = useState<any[]>([])
   const [orders, setOrders] = useState<any[]>([])
+  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'avatar' | 'info' | 'downloads' | 'orders'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
 
@@ -38,6 +39,19 @@ export default function ProfilePage() {
         }
       }
     } catch {}
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
   }, [])
 
   useEffect(() => {
@@ -154,7 +168,7 @@ export default function ProfilePage() {
         <section className="mb-6">
           <div className="relative w-screen left-1/2 -translate-x-1/2 h-40 md:h-52 overflow-hidden border border-border bg-card">
             <Image
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=520&fit=crop"
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Profile Hero"
               fill
               className="object-cover"
@@ -190,7 +204,7 @@ export default function ProfilePage() {
               {(['overview','avatar','info','downloads','orders'] as const).map(key => (
                 <button
                   key={key}
-                  className={`w-full text-left px-3 py-2 rounded-md transition-colors ${activeTab === key ? 'bg-pink-50 text-pink-600' : 'text-foreground hover:bg-secondary'}`}
+                  className={`w-full text-left px-3 py-2 rounded-md transition-colors ${activeTab === key ? 'bg-violet-50 text-violet-600' : 'text-foreground hover:bg-secondary'}`}
                   onClick={() => setActiveTab(key)}
                 >
                   {key === 'overview' ? '概览' : key === 'avatar' ? '头像设置' : key === 'info' ? '基本信息' : key === 'downloads' ? '最近下载' : '订单记录'}

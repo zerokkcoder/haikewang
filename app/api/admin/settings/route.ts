@@ -42,6 +42,7 @@ export async function PUT(req: Request) {
   if (body.siteDescription != null) displayData.site_description = String(body.siteDescription)
   if (body.heroImage != null) displayData.hero_image = String(body.heroImage)
   if (body.footerText != null) displayData.footer_text = String(body.footerText)
+  if (body.siteSubtitle != null) displayData.site_subtitle = String(body.siteSubtitle)
 
   try {
     const existing = await prisma.siteSetting.findFirst()

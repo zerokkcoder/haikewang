@@ -21,6 +21,20 @@ export default function TagPage() {
   const [hasMore, setHasMore] = useState(true)
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false)
   const [sort, setSort] = useState<'latest' | 'downloads' | 'views'>('latest')
+  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const loadTagName = async () => {
@@ -115,7 +129,7 @@ export default function TagPage() {
         <section className="mb-6">
           <div className="relative w-screen left-1/2 -translate-x-1/2 h-48 md:h-64 overflow-hidden border border-border bg-card">
             <Image
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=600&fit=crop"
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Tag Hero"
               fill
               className="object-cover"

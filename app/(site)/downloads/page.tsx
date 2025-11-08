@@ -21,6 +21,7 @@ export default function DownloadsPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [username, setUsername] = useState('')
+  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
 
   useEffect(() => {
     try {
@@ -32,6 +33,19 @@ export default function DownloadsPage() {
         }
       }
     } catch {}
+  }, [])
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
   }, [])
 
   useEffect(() => {
@@ -80,7 +94,7 @@ export default function DownloadsPage() {
         <section className="mb-6">
           <div className="relative w-screen left-1/2 -translate-x-1/2 h-40 md:h-52 overflow-hidden border border-border bg-card">
             <Image
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=520&fit=crop"
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Downloads Hero"
               fill
               className="object-cover"

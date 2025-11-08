@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useToast } from '@/components/Toast';
@@ -20,6 +20,20 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState<{[key: string]: string}>({});
   const [sending, setSending] = useState(false);
+  const [siteConfig, setSiteConfig] = useState<{ siteLogo?: string | null; siteName?: string | null } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
+  }, [])
 
   const validateForm = () => {
     const newErrors: {[key: string]: string} = {};
@@ -192,6 +206,12 @@ export default function RegisterPage() {
   return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundImage: "url('/auth_bg_animated.svg')", backgroundSize: 'cover', backgroundPosition: 'center' }}>
       <div className="max-w-md w-full mx-auto px-4">
+        <div className="text-center mb-4">
+          <div className="inline-flex items-center gap-2">
+            <img src={siteConfig?.siteLogo || '/logo.png'} alt="logo" className="w-8 h-8 object-contain" />
+            <span className="text-lg font-semibold text-foreground">{siteConfig?.siteName || '骇课网'}</span>
+          </div>
+        </div>
 
         {/* Register Form */}
         <div className="bg-card rounded-lg border border-border p-6 shadow-sm">
@@ -330,7 +350,7 @@ export default function RegisterPage() {
             <button
               type="submit"
               disabled={loading}
-              className="w-full rounded-lg bg-pink-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full rounded-lg bg-violet-500 text-white py-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <div className="flex items-center justify-center">

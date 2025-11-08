@@ -21,6 +21,20 @@ export default function CategoryPage() {
   const [hasMore, setHasMore] = useState(true);
   const [autoLoadEnabled, setAutoLoadEnabled] = useState(false);
   const [sort, setSort] = useState<'latest' | 'downloads' | 'views' | 'comments'>('latest')
+  const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
+
+  useEffect(() => {
+    const controller = new AbortController()
+    const load = async () => {
+      try {
+        const res = await fetch('/api/site/settings', { signal: controller.signal, cache: 'no-store' })
+        const json = await res.json().catch(() => ({}))
+        if (res.ok && json?.success) setSiteConfig(json.data)
+      } catch {}
+    }
+    load()
+    return () => controller.abort()
+  }, [])
 
   useEffect(() => {
     const loadCategory = async () => {
@@ -145,7 +159,7 @@ export default function CategoryPage() {
         <section className="mb-6">
           <div className="relative w-screen left-1/2 -translate-x-1/2 h-48 md:h-64 overflow-hidden border border-border bg-card">
             <Image
-              src="https://images.unsplash.com/photo-1515378791036-0648a3ef77b2?w=1600&h=600&fit=crop"
+              src={siteConfig?.heroImage || "/haike_hero.svg"}
               alt="Category Hero"
               fill
               className="object-cover"
@@ -167,7 +181,7 @@ export default function CategoryPage() {
             <span className="text-muted-foreground">分类</span>
             <Link
               href={`/category/${categoryIdNum}`}
-              className="px-2 py-0.5 rounded-full bg-pink-500 text-white"
+              className="px-2 py-0.5 rounded-full bg-violet-500 text-white"
             >
               全部
             </Link>
@@ -187,9 +201,9 @@ export default function CategoryPage() {
           </div>
           <div className="flex items-center gap-3">
             <span className="text-muted-foreground">排序</span>
-            <button onClick={() => handleSortChange('latest')} className={`px-2 py-0.5 rounded-full ${sort==='latest' ? 'bg-pink-500 text-white' : 'text-black'}`}>最新发布</button>
-            <button onClick={() => handleSortChange('downloads')} className={`px-2 py-0.5 rounded-full ${sort==='downloads' ? 'bg-pink-500 text-white' : 'text-black'}`}>下载最多</button>
-            <button onClick={() => handleSortChange('views')} className={`px-2 py-0.5 rounded-full ${sort==='views' ? 'bg-pink-500 text-white' : 'text-black'}`}>浏览最多</button>
+            <button onClick={() => handleSortChange('latest')} className={`px-2 py-0.5 rounded-full ${sort==='latest' ? 'bg-violet-500 text-white' : 'text-black'}`}>最新发布</button>
+            <button onClick={() => handleSortChange('downloads')} className={`px-2 py-0.5 rounded-full ${sort==='downloads' ? 'bg-violet-500 text-white' : 'text-black'}`}>下载最多</button>
+            <button onClick={() => handleSortChange('views')} className={`px-2 py-0.5 rounded-full ${sort==='views' ? 'bg-violet-500 text-white' : 'text-black'}`}>浏览最多</button>
           </div>
         </div>
 
