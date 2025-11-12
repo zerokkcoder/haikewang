@@ -6,6 +6,10 @@ import prisma from "@/lib/prisma";
 import Footer from "@/components/Footer";
 import FloatingActions from "@/components/FloatingActions";
 
+// 强制此布局动态渲染，避免首页等使用旧的站点设置缓存
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
