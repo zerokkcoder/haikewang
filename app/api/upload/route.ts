@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    const uploadsDir = path.join(process.cwd(), 'storage', 'uploads')
     try {
       await stat(uploadsDir)
     } catch {
@@ -50,7 +50,7 @@ export async function DELETE(req: Request) {
     if (!url || !url.startsWith('/uploads/')) {
       return NextResponse.json({ success: false, message: '无效的文件地址' }, { status: 400 })
     }
-    const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+    const uploadsDir = path.join(process.cwd(), 'storage', 'uploads')
     const target = path.join(uploadsDir, path.basename(url))
     try {
       await unlink(target)
