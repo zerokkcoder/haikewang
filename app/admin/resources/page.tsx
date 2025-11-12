@@ -287,6 +287,7 @@ export default function AdminResourcesPage() {
                   if (!file) return
                   const allowed = ['image/png','image/jpeg','image/webp']
                   if (!allowed.includes(file.type)) { toast('仅支持 png/jpg/webp', 'error'); return }
+                  const prevCover = cover
                   if (file.size > 2 * 1024 * 1024) {
                     // 简单压缩：使用 canvas 降采样与质量压缩
                     const bitmap = await createImageBitmap(file)
@@ -308,13 +309,35 @@ export default function AdminResourcesPage() {
                     fd.append('file', new File([blob], file.name.replace(/\.[^.]+$/, '') + (outType === 'image/png' ? '.png' : outType === 'image/webp' ? '.webp' : '.jpg'), { type: outType }))
                     const res = await fetch('/api/upload', { method: 'POST', body: fd })
                     const data = await res.json()
-                    if (data?.success && data.url) setCover(data.url)
+                    if (data?.success && data.url) {
+                      setCover(data.url)
+                      if (prevCover && prevCover.startsWith('/uploads/') && prevCover !== data.url) {
+                        try {
+                          const del = await fetch(`/api/upload?url=${encodeURIComponent(prevCover)}`, { method: 'DELETE' })
+                          const delRes = await del.json()
+                          if (!delRes?.success) {
+                            toast(delRes?.message || '旧封面删除失败', 'error')
+                          }
+                        } catch {}
+                      }
+                    }
                     else toast(data?.message || '上传失败', 'error')
                   } else {
                     const fd = new FormData(); fd.append('file', file)
                     const res = await fetch('/api/upload', { method: 'POST', body: fd })
                     const data = await res.json()
-                    if (data?.success && data.url) setCover(data.url)
+                    if (data?.success && data.url) {
+                      setCover(data.url)
+                      if (prevCover && prevCover.startsWith('/uploads/') && prevCover !== data.url) {
+                        try {
+                          const del = await fetch(`/api/upload?url=${encodeURIComponent(prevCover)}`, { method: 'DELETE' })
+                          const delRes = await del.json()
+                          if (!delRes?.success) {
+                            toast(delRes?.message || '旧封面删除失败', 'error')
+                          }
+                        } catch {}
+                      }
+                    }
                     else toast(data?.message || '上传失败', 'error')
                   }
                 }}
