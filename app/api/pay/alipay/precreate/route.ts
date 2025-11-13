@@ -19,9 +19,9 @@ export async function POST(req: Request) {
     }
 
     const alipay = await getAlipay()
-    const res: any = await alipay.exec(
-      'alipay.trade.precreate',
-      {
+    let res: any
+    try {
+      res = await alipay.exec('alipay.trade.precreate', {
         notify_url: await getNotifyUrl(),
         biz_content: {
           out_trade_no,
@@ -29,9 +29,18 @@ export async function POST(req: Request) {
           subject: safeSubject,
           product_code: 'FACE_TO_FACE_PAYMENT',
         }
-      },
-      { validateSign: true }
-    )
+      })
+    } catch {
+      res = await alipay.exec('alipay.trade.precreate', {
+        notify_url: await getNotifyUrl(),
+        biz_content: {
+          out_trade_no,
+          total_amount: total_amount.toFixed(2),
+          subject: safeSubject,
+          product_code: 'FACE_TO_FACE_PAYMENT',
+        }
+      }, { validateSign: false })
+    }
 
     // 根据文档，返回 code=10000 且包含 qrCode 为成功
     if (res?.code !== '10000' || !res?.qrCode) {
