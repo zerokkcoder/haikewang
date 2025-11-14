@@ -223,14 +223,12 @@ export default function Header({ currentUser, initialCategories = [], initialSit
                       >
                         下载记录
                       </Link>
-                      {!siteUser.isVip && (
-                        <Link
-                          href="/vip"
-                          className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
-                        >
-                          升级VIP
-                        </Link>
-                      )}
+                      <Link
+                        href="/vip"
+                        className="block px-3 py-2 text-sm text-muted-foreground hover:text-primary hover:bg-secondary"
+                      >
+                        升级VIP
+                      </Link>
                       <hr className="my-2 border-border" />
                       <button onClick={handleLogout} className="block w-full text-left px-3 py-2 text-sm text-destructive hover:bg-secondary">
                         退出登录
