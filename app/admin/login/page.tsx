@@ -23,14 +23,14 @@ export default function AdminLoginPage() {
       const res = await fetch('/api/admin/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password, remember })
+        body: JSON.stringify({ username, password, remember }),
+        credentials: 'same-origin',
       })
-      const data = await res.json()
-      if (!data.success) {
-        throw new Error(data.message || '登录失败')
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok || !data.success) {
+        throw new Error(data?.message || '登录失败')
       }
-      localStorage.setItem('adminToken', data.token)
-      router.push('/admin')
+      router.replace('/admin')
     } catch (err: any) {
       setError(err?.message || '登录失败，请重试')
     } finally {

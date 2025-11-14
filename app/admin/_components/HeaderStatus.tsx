@@ -14,9 +14,9 @@ export default function HeaderStatus() {
   useEffect(() => {
     const loadMe = async () => {
       try {
-        const res = await fetch('/api/admin/me')
+        const res = await fetch('/api/admin/me', { credentials: 'same-origin', cache: 'no-store' })
         if (res.ok) {
-          const data = await res.json()
+          const data = await res.json().catch(() => ({}))
           if (data.authenticated) {
             setMe({ username: data.user.username, role: data.user.role })
           } else {
@@ -83,10 +83,9 @@ function LogoutMenu({ setMe }: { setMe: (val: any) => void }) {
         cancelText="取消"
         onConfirm={async () => {
           setOpen(false)
-          await fetch('/api/admin/logout', { method: 'POST' })
-          localStorage.removeItem('adminToken')
+          await fetch('/api/admin/logout', { method: 'POST', credentials: 'same-origin' })
           setMe(null)
-          router.push('/admin/login')
+          router.replace('/admin/login')
         }}
         onCancel={() => setOpen(false)}
       />
