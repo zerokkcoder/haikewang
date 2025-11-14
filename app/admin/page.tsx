@@ -23,9 +23,9 @@ export default function AdminPage() {
     // 客户端状态展示：调用 /api/admin/me
     const loadMe = async () => {
       try {
-        const res = await fetch('/api/admin/me')
+        const res = await fetch('/api/admin/me', { credentials: 'same-origin', cache: 'no-store' })
         if (res.ok) {
-          const data = await res.json()
+          const data = await res.json().catch(() => ({}))
           if (data.authenticated) {
             setMe({ username: data.user.username, role: data.user.role })
           } else {
@@ -46,7 +46,7 @@ export default function AdminPage() {
   useEffect(() => {
     const loadStats = async () => {
       try {
-        const res = await fetch('/api/admin/stats', { cache: 'no-store' })
+        const res = await fetch('/api/admin/stats', { cache: 'no-store', credentials: 'same-origin' })
         const json = await res.json().catch(() => ({}))
         if (res.ok && json?.success) setStats(json.data)
       } catch {}
