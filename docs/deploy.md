@@ -11,7 +11,7 @@
   - `DATABASE_URL`：`mysql://user:pass@host:port/dbname`
   - `ADMIN_JWT_SECRET`、`SITE_JWT_SECRET`：随机生成的安全字符串
   - `ALIPAY_APP_ID`、`ALIPAY_PRIVATE_KEY`（PKCS8）、`ALIPAY_PUBLIC_KEY`、`ALIPAY_GATEWAY`、`ALIPAY_NOTIFY_URL`
-  - 可选：`NEXT_PUBLIC_SITE_URL` 或 `SITE_URL`（如 `https://xuehaoke.top`）
+  - 可选：`NEXT_PUBLIC_SITE_URL` 或 `SITE_URL`（如 `https://www.xuehaoke.top`）
 
 > 支付功能需要在后台「站点设置」完成品牌信息与支付宝密钥配置；并确保回调地址（`ALIPAY_NOTIFY_URL`）公网可访问。
 
