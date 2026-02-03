@@ -9,7 +9,8 @@ export default async function middleware(req: NextRequest) {
   // 1. 强制 HTTPS 和 www 重定向 (仅生产环境)
   if (process.env.NODE_ENV === 'production') {
     const url = req.nextUrl.clone()
-    const hostname = req.headers.get('host') || ''
+    const hostHeader = req.headers.get('host') || ''
+    const hostname = hostHeader.split(':')[0] // 去除端口号
     const proto = req.headers.get('x-forwarded-proto') || url.protocol.replace(':', '')
     
     // 检查是否需要重定向：非 www 或非 HTTPS
@@ -17,13 +18,12 @@ export default async function middleware(req: NextRequest) {
     const isHttps = proto === 'https'
     
     // 如果是 localhost 或 IP 地址，不重定向
-    if (!hostname.includes('localhost') && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
+    if (hostname && !hostname.includes('localhost') && !/^\d+\.\d+\.\d+\.\d+$/.test(hostname)) {
       if (!isWww || !isHttps) {
         const newHost = isWww ? hostname : `www.${hostname}`
-        url.protocol = 'https'
-        url.host = newHost
-        url.port = '' // 清除端口
-        return NextResponse.redirect(url, 301)
+        // 使用字符串拼接构建绝对路径，避免 NextURL 对象处理 host 的潜在问题
+        const newUrl = `https://${newHost}${url.pathname}${url.search}`
+        return NextResponse.redirect(newUrl, 301)
       }
     }
   }
