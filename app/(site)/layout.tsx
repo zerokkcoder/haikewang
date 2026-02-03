@@ -37,6 +37,10 @@ export async function generateMetadata(): Promise<Metadata> {
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
     }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
+    }
     return {
       title,
       description,
@@ -66,6 +70,10 @@ export async function generateMetadata(): Promise<Metadata> {
     let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.xuehaoke.top'
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
+    }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
     }
     return {
       title: "学好课 - 专业资源下载平台",

@@ -33,7 +33,11 @@ export async function generateMetadata(): Promise<Metadata> {
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
     }
-    return { title, description, keywords, metadataBase: new URL(siteUrl) }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
+    }
+    return { title, description, keywords, metadataBase: new URL(siteUrl), alternates: { canonical: './' } }
   } catch {
     const hs = await headers()
     const proto = hs.get('x-forwarded-proto') || (process.env.NODE_ENV === 'production' ? 'https' : 'http')
@@ -42,11 +46,16 @@ export async function generateMetadata(): Promise<Metadata> {
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
     }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
+    }
     return {
       title: "学好课 - 专业资源下载平台",
       description: "提供高质量的学习资料、开发工具、设计素材等资源下载服务，助力您的学习和工作。",
       keywords: "资源下载,学习资料,开发工具,设计素材,编程教程,UI设计",
       metadataBase: new URL(siteUrl),
+      alternates: { canonical: './' },
     }
   }
 }

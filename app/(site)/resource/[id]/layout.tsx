@@ -17,6 +17,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
     }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
+    }
 
     if (!r) {
       return { title: '资源未找到', alternates: { canonical: `${siteUrl}/resource/${id}` }, robots: { index: false, follow: true } }
@@ -52,6 +56,10 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     let siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.xuehaoke.top'
     if (process.env.NODE_ENV === 'production' && siteUrl.startsWith('http://') && !siteUrl.includes('localhost')) {
       siteUrl = siteUrl.replace('http://', 'https://')
+    }
+    // 强制添加 www (如果没有)
+    if (process.env.NODE_ENV === 'production' && !siteUrl.includes('www.') && !siteUrl.includes('localhost')) {
+        siteUrl = siteUrl.replace('https://', 'https://www.')
     }
     return { title: '资源详情', alternates: { canonical: `${siteUrl}/resource/${id}` }, robots: { index: false, follow: true } }
   }
