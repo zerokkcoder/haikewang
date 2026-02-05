@@ -156,13 +156,63 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   // better to let client trigger view count or use a fire-and-forget mechanism if possible.
   // For now we skip server-side view counting or rely on client.
 
+  // 7. Generate FAQ Schema for AI SEO
+  const faqSchema = {
+    "@context": "https://schema.org",
+    "@type": "FAQPage",
+    "mainEntity": [
+      {
+        "@type": "Question",
+        "name": `什么是 ${resourceRaw.title}？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": resourceRaw.content 
+            ? resourceRaw.content.slice(0, 200).replace(/[\r\n#*`]+/g, ' ').trim() + (resourceRaw.content.length > 200 ? '...' : '')
+            : `${resourceRaw.title} 是一个优质的 ${resourceRaw.category.name} 资源，涵盖了${resourceRaw.tags.map(t => t.tag.name).join('、')}等相关内容。`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `如何获取 ${resourceRaw.title}？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `您可以在本页面直接下载 ${resourceRaw.title}。我们提供高速下载服务，确保您能快速获取所需的 ${resourceRaw.category.name} 资料。点击页面上的“立即下载”按钮即可开始。`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `${resourceRaw.title} 是免费的吗？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": Number(resourceRaw.price) > 0 
+            ? `本资源当前价格为 ${Number(resourceRaw.price).toFixed(2)} 元。加入本站 VIP 会员可享受免费下载或折扣优惠。` 
+            : `是的，${resourceRaw.title} 完全免费，您可以直接下载使用，无需支付任何费用。`
+        }
+      },
+      {
+        "@type": "Question",
+        "name": `${resourceRaw.title} 适合谁使用？`,
+        "acceptedAnswer": {
+          "@type": "Answer",
+          "text": `该资源适合所有对 ${resourceRaw.category.name} 感兴趣的学习者、开发者或设计师。无论您是初学者还是有经验的专业人士，都能从中获益。`
+        }
+      }
+    ]
+  }
+
   return (
-    <ResourceDetailClient
-      resource={resource}
-      prevNext={{ prev, next }}
-      hotTags={tags}
-      latestArticles={latestRaw}
-      guessList={guessList}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}
+      />
+      <ResourceDetailClient
+        resource={resource}
+        prevNext={{ prev, next }}
+        hotTags={tags}
+        latestArticles={latestRaw}
+        guessList={guessList}
+      />
+    </>
   )
 }
