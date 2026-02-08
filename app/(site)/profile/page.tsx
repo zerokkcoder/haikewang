@@ -3,6 +3,10 @@
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
+import { motion, AnimatePresence } from "motion/react"
+import { X } from 'lucide-react'
+import { useSearchParams } from 'next/navigation'
+import OrderPaymentModal from '@/components/OrderPaymentModal'
 
 type SiteUser = { username: string; isVip?: boolean }
 type MeData = {
@@ -26,6 +30,19 @@ export default function ProfilePage() {
   const [siteConfig, setSiteConfig] = useState<{ heroImage?: string | null } | null>(null)
   const [activeTab, setActiveTab] = useState<'overview' | 'avatar' | 'info' | 'downloads' | 'orders'>('overview')
   const [menuOpen, setMenuOpen] = useState(false)
+  const [qrModalOpen, setQrModalOpen] = useState(false)
+  const [currentQrCode, setCurrentQrCode] = useState('')
+  const [currentOutTradeNo, setCurrentOutTradeNo] = useState('')
+  const [currentAmount, setCurrentAmount] = useState(0)
+  const [currentProductName, setCurrentProductName] = useState('')
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const tab = searchParams.get('tab')
+    if (tab && ['overview', 'avatar', 'info', 'downloads', 'orders'].includes(tab)) {
+      setActiveTab(tab as any)
+    }
+  }, [searchParams])
 
   useEffect(() => {
     // 读取本地登录信息
@@ -147,6 +164,18 @@ export default function ProfilePage() {
     } finally {
       setUploading(false)
       e.target.value = ''
+    }
+  }
+
+  const handlePay = (order: any) => {
+    if (order.qrCode) {
+      setCurrentQrCode(order.qrCode)
+      setCurrentOutTradeNo(order.outTradeNo)
+      setCurrentAmount(Number(order.amount) || 0)
+      setCurrentProductName(order.productName || '订单支付')
+      setQrModalOpen(true)
+    } else {
+      alert('无法获取支付二维码，请重新下单')
     }
   }
 
@@ -390,6 +419,7 @@ export default function ProfilePage() {
                           <th className="text-left py-2 pr-4">状态</th>
                           <th className="text-left py-2 pr-4">创建时间</th>
                           <th className="text-left py-2 pr-4">支付时间</th>
+                          <th className="text-left py-2 pr-4">操作</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -402,6 +432,16 @@ export default function ProfilePage() {
                             <td className="py-2 pr-4">{o.status}</td>
                             <td className="py-2 pr-4">{new Date(o.createdAt).toLocaleString()}</td>
                             <td className="py-2 pr-4">{o.paidAt ? new Date(o.paidAt).toLocaleString() : '—'}</td>
+                            <td className="py-2 pr-4">
+                              {o.status === 'pending' && (
+                                <button
+                                  onClick={() => handlePay(o)}
+                                  className="text-xs bg-primary text-primary-foreground px-2 py-1 rounded hover:opacity-90"
+                                >
+                                  继续支付
+                                </button>
+                              )}
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -413,6 +453,15 @@ export default function ProfilePage() {
           </section>
         </div>
       </div>
+      <OrderPaymentModal
+        isOpen={qrModalOpen}
+        onClose={() => setQrModalOpen(false)}
+        qrCode={currentQrCode}
+        outTradeNo={currentOutTradeNo}
+        amount={currentAmount}
+        productName={currentProductName}
+        onSuccess={() => window.location.reload()}
+      />
     </div>
   )
 }

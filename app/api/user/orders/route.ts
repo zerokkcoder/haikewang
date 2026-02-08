@@ -23,6 +23,7 @@ export async function POST(req: Request) {
         amount: true,
         status: true,
         payChannel: true,
+        qrCode: true,
         createdAt: true,
         paidAt: true,
       }

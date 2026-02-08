@@ -173,6 +173,7 @@ model Order {
   status      String   // 'pending' | 'success' | 'closed' | 'failed'
   payChannel  String   @default("alipay") @map("pay_channel")
   notifyRaw   Json?    @map("notify_raw")
+  qrCode      String?  @map("qr_code") // Store the payment QR code URL
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
   paidAt      DateTime? @map("paid_at")

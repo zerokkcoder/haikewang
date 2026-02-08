@@ -87,6 +87,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 import { getCachedCategories, getCachedSiteSettings } from '@/lib/cache'
+import UnpaidOrderReminder from "@/components/UnpaidOrderReminder";
 
 export default async function SiteLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   let initialCategories: { id: number; name: string; slug?: string | null; subcategories: { id: number; name: string; slug?: string | null }[] }[] = []
@@ -106,6 +107,7 @@ export default async function SiteLayout({ children }: Readonly<{ children: Reac
       <main className="flex-1">{children}</main>
       <FloatingActions />
       <Footer />
+      <UnpaidOrderReminder />
     </div>
   )
 }

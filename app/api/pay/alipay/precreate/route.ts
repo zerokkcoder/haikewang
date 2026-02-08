@@ -78,6 +78,7 @@ export async function POST(req: Request) {
         amount: total_amount,
         status: 'pending',
         payChannel: 'alipay',
+        qrCode: qrCode,
       },
     })
     return NextResponse.json({ success: true, data: { qrCode: qrCode, outTradeNo: out_trade_no } })
