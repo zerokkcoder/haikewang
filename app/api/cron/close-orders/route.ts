@@ -20,18 +20,9 @@ export async function GET() {
       },
     })
 
-    console.log('关闭订单数量:', result.count)
-    console.log('关闭订单时间:', timeLimit)
-    return NextResponse.json({
-      success: true,
-      message: `Closed ${result.count} expired orders`,
-      count: result.count,
-    })
+    return new NextResponse(`已关闭 ${result.count} 个超时订单`)
   } catch (error) {
     console.error('Failed to close expired orders:', error)
-    return NextResponse.json(
-      { success: false, message: 'Internal Server Error' },
-      { status: 500 }
-    )
+    return new NextResponse('服务器内部错误', { status: 500 })
   }
 }
