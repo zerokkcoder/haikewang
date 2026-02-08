@@ -24,14 +24,16 @@
 
 ## 主要功能
 
-- 前台：首页、分类/子分类/标签、资源详情、个人中心、下载记录
+- 前台：首页、分类/子分类/标签、资源详情、个人中心（支持订单续付）、下载记录
 - 后台：站点设置与支付配置
-- 支付：预下单、查询、回调；支付成功自动发放访问授权
+- 支付：预下单、查询、回调、超时自动关闭（15分钟）；支付成功自动发放访问授权；首页未支付订单提醒
+- 计划任务：定时清理超时未支付订单
 
 ## 接口简要
 
 - `GET /api/resources`、`GET /api/resources/[id]`
 - `POST /api/pay/alipay/precreate`、`POST /api/pay/alipay/query`、`POST /api/pay/alipay/notify`
+- `GET /api/cron/close-orders` （关闭超时未支付订单）
 
 ## 部署提示
 
