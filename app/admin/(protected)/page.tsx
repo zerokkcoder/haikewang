@@ -141,7 +141,9 @@ export default function AdminPage() {
                         <td className="px-2 py-1 text-foreground">{o.outTradeNo}</td>
                         <td className="px-2 py-1 text-foreground">{o.productName}</td>
                         <td className="px-2 py-1 text-foreground">¥{Number(o.amount || 0).toFixed(2)}</td>
-                        <td className="px-2 py-1 text-foreground">{o.status}</td>
+                        <td className={`px-2 py-1 ${o.status === 'success' ? 'text-green-600' : o.status === 'pending' ? 'text-red-600' : 'text-muted-foreground'}`}>
+                          {o.status === 'success' ? '已支付' : o.status === 'pending' ? '待支付' : o.status === 'closed' ? '已关闭' : o.status}
+                        </td>
                         <td className="px-2 py-1 text-muted-foreground">{new Date(o.createdAt).toLocaleString()}</td>
                       </tr>
                     ))}

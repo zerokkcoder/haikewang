@@ -426,7 +426,7 @@ export default function ProfilePage() {
                         {orders.map((o) => (
                           <tr key={o.id} className="border-b border-border">
                             <td className="py-2 pr-4 truncate max-w-[180px]">{o.outTradeNo}</td>
-                            <td className="py-2 pr-4">{o.orderType}</td>
+                            <td className="py-2 pr-4">{o.orderType === 'course' ? '课程' : o.orderType === 'member' ? '会员' : o.orderType}</td>
                             <td className="py-2 pr-4 truncate max-w-[240px]">{o.productName}</td>
                             <td className="py-2 pr-4 text-red-600 font-medium">¥{o.amount}</td>
                             <td className={`py-2 pr-4 ${o.status === 'success' ? 'text-green-600' : o.status === 'pending' ? 'text-red-600' : 'text-zinc-500'}`}>

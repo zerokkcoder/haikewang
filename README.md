@@ -33,7 +33,7 @@
 
 - `GET /api/resources`、`GET /api/resources/[id]`
 - `POST /api/pay/alipay/precreate`、`POST /api/pay/alipay/query`、`POST /api/pay/alipay/notify`
-- `GET /api/cron/close-orders` （关闭超时未支付订单）
+- `GET /api/cron/close-orders` （关闭超时未支付订单，请添加到计划任务中）
 
 ## 部署提示
 
