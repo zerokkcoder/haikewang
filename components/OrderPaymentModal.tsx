@@ -1,10 +1,10 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Image from 'next/image'
 import { motion, AnimatePresence } from "motion/react"
 import { X, CheckCircle2, Loader2, ScanLine } from 'lucide-react'
 import { useToast } from '@/components/Toast'
+import { QRCodeSVG } from 'qrcode.react'
 
 interface OrderPaymentModalProps {
   isOpen: boolean
@@ -151,14 +151,15 @@ export default function OrderPaymentModal({
                       <CheckCircle2 className="w-16 h-16 text-green-500" />
                     </div>
                   ) : (
-                    <Image
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrCode)}`}
-                      alt="Payment QR Code"
-                      width={200}
-                      height={200}
-                      className="rounded-lg"
-                      unoptimized
-                    />
+                    <div className="bg-white p-2 rounded-lg">
+                      <QRCodeSVG
+                        value={qrCode}
+                        size={184}
+                        level="H"
+                        includeMargin={false}
+                        className="w-full h-full"
+                      />
+                    </div>
                   )}
                   
                   {/* Status Overlay */}

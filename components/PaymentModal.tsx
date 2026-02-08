@@ -3,8 +3,8 @@
 import { useRef, useState, useEffect } from 'react'
 import { usePathname } from 'next/navigation'
 import { useToast } from '@/components/Toast'
-import Image from 'next/image'
 import { motion, AnimatePresence } from "motion/react"
+import { QRCodeSVG } from 'qrcode.react'
 // import { processPayment, generateOrderId, paymentMethods, createPaymentStatus } from '@/lib/payment'
 
 interface PaymentModalProps {
@@ -252,19 +252,24 @@ export default function PaymentModal({ isOpen, onClose, amount, description, onP
             <div className="text-center mb-6">
               <div className="bg-muted p-6 rounded-lg mb-4">
                 {paymentData.qrCode ? (
-                  <div className="text-center">
-                    <Image
-                      src={`https://api.qrserver.com/v1/create-qr-code/?size=192x192&data=${encodeURIComponent(paymentData.qrCode)}`}
-                      alt="支付宝扫码二维码"
-                      width={192}
-                      height={192}
-                      className="w-48 h-48 mx-auto mb-4 rounded border border-border bg-white"
-                      unoptimized
-                    />
-                    <p className="text-sm text-muted-foreground">请使用支付宝扫描二维码完成支付</p>
+                  <div className="text-center flex justify-center">
+                    <div className="p-2 bg-white rounded border border-border">
+                      <QRCodeSVG
+                        value={paymentData.qrCode}
+                        size={192}
+                        level="H"
+                        includeMargin={false}
+                      />
+                    </div>
                   </div>
                 ) : (
                   <div className="text-center text-sm text-destructive">二维码生成失败，请重试</div>
+                )}
+                {paymentData.qrCode && (
+                   <div className="mt-4 space-y-1">
+                     <p className="text-sm text-muted-foreground">请使用支付宝扫描二维码完成支付</p>
+                     <p className="text-xs text-muted-foreground/80">二维码如果未显示，请到<span className="text-red-500 font-medium">个人中心-订单记录</span>继续付款</p>
+                   </div>
                 )}
                 {paymentData.paymentUrl && (
                   <div className="text-center">
