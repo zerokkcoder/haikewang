@@ -428,10 +428,12 @@ export default function ProfilePage() {
                             <td className="py-2 pr-4 truncate max-w-[180px]">{o.outTradeNo}</td>
                             <td className="py-2 pr-4">{o.orderType}</td>
                             <td className="py-2 pr-4 truncate max-w-[240px]">{o.productName}</td>
-                            <td className="py-2 pr-4">¥{o.amount}</td>
-                            <td className="py-2 pr-4">{o.status}</td>
-                            <td className="py-2 pr-4">{new Date(o.createdAt).toLocaleString()}</td>
-                            <td className="py-2 pr-4">{o.paidAt ? new Date(o.paidAt).toLocaleString() : '—'}</td>
+                            <td className="py-2 pr-4 text-red-600 font-medium">¥{o.amount}</td>
+                            <td className={`py-2 pr-4 ${o.status === 'success' ? 'text-green-600' : o.status === 'pending' ? 'text-red-600' : 'text-zinc-500'}`}>
+                              {o.status === 'success' ? '已支付' : o.status === 'pending' ? '待支付' : o.status === 'closed' ? '已关闭' : o.status}
+                            </td>
+                            <td className="py-2 pr-4 text-zinc-500">{new Date(o.createdAt).toLocaleString()}</td>
+                            <td className="py-2 pr-4 text-zinc-500">{o.paidAt ? new Date(o.paidAt).toLocaleString() : '—'}</td>
                             <td className="py-2 pr-4">
                               {o.status === 'pending' && (
                                 <button

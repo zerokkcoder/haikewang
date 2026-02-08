@@ -73,7 +73,7 @@ export default function UnpaidOrderReminder() {
         </button>
         
         <div className="flex items-start gap-3">
-          <div className="flex-shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
+          <div className="shrink-0 w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary">
             <Bell className="w-5 h-5" />
           </div>
           
