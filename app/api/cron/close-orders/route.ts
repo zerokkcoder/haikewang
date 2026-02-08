@@ -20,6 +20,8 @@ export async function GET() {
       },
     })
 
+    console.log('关闭订单数量:', result.count)
+    console.log('关闭订单时间:', timeLimit)
     return NextResponse.json({
       success: true,
       message: `Closed ${result.count} expired orders`,
