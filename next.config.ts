@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
   productionBrowserSourceMaps: false,
+  allowedDevOrigins: ['192.168.100.198'],
   images: {
     localPatterns: [
       {
@@ -32,14 +33,6 @@ const nextConfig: NextConfig = {
   async headers() {
     return [
       {
-        source: '/_next/static/:path*',
-        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
-      },
-      {
-        source: '/_next/data/:path*',
-        headers: [{ key: 'Cache-Control', value: 'no-store' }],
-      },
-      {
         source: '/admin/:path*',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
@@ -47,7 +40,6 @@ const nextConfig: NextConfig = {
         source: '/api/:path*',
         headers: [{ key: 'Cache-Control', value: 'no-store' }],
       },
-      // Prevent HTML caching to avoid stale CSS references after deployment
       {
         source: '/((?!api|_next/static|_next/image|favicon.ico|uploads).*)',
         headers: [
@@ -61,7 +53,6 @@ const nextConfig: NextConfig = {
           { key: 'X-Content-Type-Options', value: 'nosniff' },
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), interest-cohort=()' },
-          // CSP moved to middleware for dynamic nonce per-request
         ],
       },
     ]
