@@ -21,20 +21,31 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   const { id } = await params
   const idNum = Number(id)
   if (isNaN(idNum)) return {}
-  
+
   const resource = await prisma.resource.findUnique({
     where: { id: idNum },
-    select: { title: true, content: true, cover: true }
+    select: { title: true, content: true, cover: true, category: { select: { name: true, slug: true } }, subcategory: { select: { name: true, slug: true } }, tags: { include: { tag: true } } }
   })
-  
+
   if (!resource) return {}
-  
+
+  const tagNames = resource.tags.map((t: any) => t.tag.name).filter((n: any) => n)
+  const mainTag = tagNames[0] || resource.category?.name || ''
+  const techKeywords = tagNames.slice(0, 3).join('+') || resource.category?.name || ''
+  const cleanTitle = resource.title.replace(/无秘|完结|高清|完整版/gi, '').trim()
+  const highlights = cleanTitle.length > 30 ? cleanTitle.slice(0, 30) + '...' : cleanTitle
+
+  const optimizedTitle = `${techKeywords}视频教程 - ${highlights} | 学好课`
+  const metaDescription = resource.content
+    ? resource.content.replace(/[#*`\[\]]/g, '').replace(/\n+/g, ' ').trim().slice(0, 160)
+    : `${mainTag}视频教程免费下载，涵盖${tagNames.join('、')}等核心技术点，适合${resource.category?.name || '编程'}学习者。`
+
   return {
-    title: resource.title,
-    description: resource.content ? resource.content.slice(0, 160).replace(/[#*`]/g, '') : '',
+    title: optimizedTitle,
+    description: metaDescription,
     openGraph: {
-      title: resource.title,
-      description: resource.content ? resource.content.slice(0, 160).replace(/[#*`]/g, '') : '',
+      title: optimizedTitle,
+      description: metaDescription,
       images: resource.cover ? [resource.cover] : [],
     }
   }
@@ -142,7 +153,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
     categorySlug: resourceRaw.category.slug,
     subcategory: resourceRaw.subcategory?.name,
     subcategorySlug: resourceRaw.subcategory?.slug,
-    tags: resourceRaw.tags.map(t => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug })),
+    tags: resourceRaw.tags.map((t: any) => ({ id: t.tag.id, name: t.tag.name, slug: t.tag.slug })),
     isVipOnly: false, // Simplified
     isNew: (Date.now() - resourceRaw.createdAt.getTime()) < 7 * 24 * 3600 * 1000,
     isPopular: resourceRaw.downloadCount > 100 || resourceRaw.viewCount > 500,
@@ -152,11 +163,41 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   }
 
   // 6. Log view count (server side effect)
-  // We can't easily execute async side effect without delaying response, 
+  // We can't easily execute async side effect without delaying response,
   // better to let client trigger view count or use a fire-and-forget mechanism if possible.
   // For now we skip server-side view counting or rely on client.
 
-  // 7. Generate FAQ Schema for AI SEO
+  // 7. Generate Course Schema for Rich Snippets
+  const courseSchema = {
+    "@context": "https://schema.org",
+    "@type": "Course",
+    "name": resourceRaw.title,
+    "description": resourceRaw.content ? resourceRaw.content.replace(/[#*`\[\]]/g, '').replace(/\n+/g, ' ').trim().slice(0, 500) : `${resourceRaw.title} 视频教程`,
+    "image": resourceRaw.cover || undefined,
+    "provider": {
+      "@type": "Organization",
+      "name": "学好课",
+      "url": "https://xuehaoke.top"
+    },
+    "aggregateRating": resourceRaw.downloadCount > 10 ? {
+      "@type": "AggregateRating",
+      "ratingValue": "4.5",
+      "reviewCount": resourceRaw.downloadCount.toString()
+    } : undefined,
+    "offers": {
+      "@type": "Offer",
+      "price": Number(resourceRaw.price) > 0 ? Number(resourceRaw.price).toFixed(2) : "0",
+      "priceCurrency": "CNY",
+      "availability": Number(resourceRaw.price) > 0 ? "https://schema.org/PreOrder" : "https://schema.org/FreeBoolean"
+    },
+    "about": {
+      "@type": "Thing",
+      "name": resourceRaw.category?.name || "编程课程",
+      "description": resourceRaw.subcategory?.name || `${resourceRaw.tags.map((t: any) => t.tag.name).join('、')}相关课程`
+    }
+  }
+
+  // 8. Generate FAQ Schema for AI SEO
   const faqSchema = {
     "@context": "https://schema.org",
     "@type": "FAQPage",
@@ -168,7 +209,7 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
           "@type": "Answer",
           "text": resourceRaw.content 
             ? resourceRaw.content.slice(0, 200).replace(/[\r\n#*`]+/g, ' ').trim() + (resourceRaw.content.length > 200 ? '...' : '')
-            : `${resourceRaw.title} 是一个优质的 ${resourceRaw.category.name} 资源，涵盖了${resourceRaw.tags.map(t => t.tag.name).join('、')}等相关内容。`
+            : `${resourceRaw.title} 是一个优质的 ${resourceRaw.category.name} 资源，涵盖了${resourceRaw.tags.map((t: any) => t.tag.name).join('、')}等相关内容。`
         }
       },
       {
@@ -202,6 +243,10 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(courseSchema) }}
+      />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqSchema) }}

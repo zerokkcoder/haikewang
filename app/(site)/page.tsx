@@ -83,9 +83,6 @@ export default async function Home({
     resourcesRaw = r
   }
 
-  // 转换为客户端组件需要的格式
-
-  // 转换为客户端组件需要的格式
   const initialResources = resourcesRaw.map((r) => ({
     id: r.id,
     title: r.title,
@@ -95,13 +92,43 @@ export default async function Home({
     subcategorySlug: r.subcategory?.slug || null,
   }))
 
+  const homepageIntro = '学好课是专业的视频教程资源下载平台，汇集了慕课网、极客时间、腾讯课堂等平台的优质课程。涵盖Java、Python、前端开发、后端架构、AI人工智能、大模型等热门技术领域。所有资源均可免费高速下载，配有完整的课程笔记和源码。我们致力于为学习者提供便捷、高效的资源获取服务，帮助你快速提升技术能力，无论是初学者入门还是工程师进阶，都能在这里找到所需的学习资料。'
+
+  const websiteSchema = {
+    "@context": "https://schema.org",
+    "@type": "WebSite",
+    "name": "学好课",
+    "url": "https://xuehaoke.top",
+    "description": "专业的视频教程资源下载平台，汇集慕课网、极客时间等平台的优质课程",
+    "potentialAction": {
+      "@type": "SearchAction",
+      "target": {
+        "@type": "EntryPoint",
+        "urlTemplate": "https://xuehaoke.top/?q={search_term_string}"
+      },
+      "query-input": "required name=search_term_string"
+    },
+    "publisher": {
+      "@type": "Organization",
+      "name": "学好课",
+      "url": "https://xuehaoke.top"
+    }
+  }
+
   return (
-    <HomeClient
-      initialResources={initialResources}
-      initialTotal={total}
-      initialSiteConfig={siteConfig}
-      initialQ={q}
-      initialSort={sort}
-    />
+    <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(websiteSchema) }}
+      />
+      <HomeClient
+        initialResources={initialResources}
+        initialTotal={total}
+        initialSiteConfig={siteConfig}
+        initialQ={q}
+        initialSort={sort}
+        initialIntro={!q ? homepageIntro : undefined}
+      />
+    </>
   )
 }

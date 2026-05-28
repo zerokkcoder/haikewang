@@ -13,6 +13,7 @@ interface HomeClientProps {
   initialSiteConfig: { heroImage?: string | null; siteSlogan?: string | null; siteSubtitle?: string | null; siteName?: string | null } | null
   initialQ: string
   initialSort: 'latest' | 'downloads' | 'views'
+  initialIntro?: string
 }
 
 export default function HomeClient({
@@ -20,7 +21,8 @@ export default function HomeClient({
   initialTotal,
   initialSiteConfig,
   initialQ,
-  initialSort
+  initialSort,
+  initialIntro
 }: HomeClientProps) {
   const [displayedResources, setDisplayedResources] = useState(initialResources)
   const [isLoading, setIsLoading] = useState(false)
@@ -181,43 +183,51 @@ export default function HomeClient({
     <div className="min-h-screen bg-background">
       {/* Hero Section with Static Image, Title, Description, and Search */}
       {!showSearchView && (
-        <section>
-          <div className="relative w-full h-64 md:h-72 overflow-hidden card">
-            <Image
-              src={initialSiteConfig?.heroImage || "/haike_hero.svg"}
-              alt="Hero"
-              fill
-              sizes="(max-width: 768px) 100vw, 100vw"
-              className="object-cover"
-              priority
-              unoptimized
-            />
-            <div className="absolute inset-0 bg-black/35" />
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-full text-white">
-                <div className="w-full animate-fadeIn flex flex-col items-center justify-center text-center">
-                  <h1 className="text-3xl md:text-4xl font-bold mb-4">{initialSiteConfig?.siteSubtitle || '学好课，卷王必备的资源平台'}</h1>
-                  <TypewriterText 
-                    text={initialSiteConfig?.siteSlogan || '海量优质资源，快速检索，一键下载'} 
-                    className="text-base md:text-lg mb-4 opacity-90"
-                  />
-                  <form onSubmit={handleSearchSubmit} className="flex items-center justify-center w-11/12 md:w-full md:max-w-md mx-auto bg-white rounded-full shadow">
-                    <input
-                      type="text"
-                      placeholder="搜一下"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                      className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-4 md:pl-6"
+        <>
+          <section>
+            <div className="relative w-full h-64 md:h-72 overflow-hidden card">
+              <Image
+                src={initialSiteConfig?.heroImage || "/haike_hero.svg"}
+                alt="Hero"
+                fill
+                sizes="(max-width: 768px) 100vw, 100vw"
+                className="object-cover"
+                priority
+                unoptimized
+              />
+              <div className="absolute inset-0 bg-black/35" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full text-white">
+                  <div className="w-full animate-fadeIn flex flex-col items-center justify-center text-center">
+                    <h1 className="text-3xl md:text-4xl font-bold mb-4">{initialSiteConfig?.siteSubtitle || '学好课，卷王必备的资源平台'}</h1>
+                    <TypewriterText
+                      text={initialSiteConfig?.siteSlogan || '海量优质资源，快速检索，一键下载'}
+                      className="text-base md:text-lg mb-4 opacity-90"
                     />
-                    <button type="submit" className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-violet-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
-                      <MagnifyingGlassIcon className="w-5 h-5" />
-                    </button>
-                  </form>
+                    <form onSubmit={handleSearchSubmit} className="flex items-center justify-center w-11/12 md:w-full md:max-w-md mx-auto bg-white rounded-full shadow">
+                      <input
+                        type="text"
+                        placeholder="搜一下"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                        className="flex-1 outline-none bg-transparent text-sm md:text-base text-foreground pl-4 md:pl-6"
+                      />
+                      <button type="submit" className="w-9 h-9 md:w-10 md:h-10 rounded-full bg-violet-500 text-white flex items-center justify-center hover:opacity-90" aria-label="搜索">
+                        <MagnifyingGlassIcon className="w-5 h-5" />
+                      </button>
+                    </form>
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
-        </section>
+          </section>
+
+          {initialIntro && (
+            <div className="sr-only">
+              <p>{initialIntro}</p>
+            </div>
+          )}
+        </>
       )}
 
       {showSearchView && (

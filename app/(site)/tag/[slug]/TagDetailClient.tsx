@@ -7,6 +7,7 @@ import ResourceCard from '@/components/ResourceCard'
 interface TagDetailClientProps {
   tagSlug: string
   initialTagName: string
+  initialDescription: string
   initialResources: { id: number; coverImage: string; title: string; category: string }[]
   initialTotal: number
   initialSiteConfig: { heroImage?: string | null } | null
@@ -15,6 +16,7 @@ interface TagDetailClientProps {
 export default function TagDetailClient({
   tagSlug,
   initialTagName,
+  initialDescription,
   initialResources,
   initialTotal,
   initialSiteConfig
@@ -144,6 +146,12 @@ export default function TagDetailClient({
             </div>
           </div>
         </section>
+
+        {initialDescription && (
+          <section className="mb-6 p-4 bg-card rounded-lg border">
+            <p className="text-muted-foreground text-sm leading-relaxed">{initialDescription}</p>
+          </section>
+        )}
 
         {/* Resources Grid */}
         {displayedResources.length === 0 ? (
