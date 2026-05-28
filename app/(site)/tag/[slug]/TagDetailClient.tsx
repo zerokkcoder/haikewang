@@ -148,9 +148,9 @@ export default function TagDetailClient({
         </section>
 
         {initialDescription && (
-          <section className="mb-6 p-4 bg-card rounded-lg border">
-            <p className="text-muted-foreground text-sm leading-relaxed">{initialDescription}</p>
-          </section>
+          <div className="sr-only">
+            <p>{initialDescription}</p>
+          </div>
         )}
 
         {/* Resources Grid */}
