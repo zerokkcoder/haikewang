@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useToast } from '@/components/Toast'
 import ConfirmDialog from '@/app/admin/_components/ConfirmDialog'
 
-type UserItem = { id: number; username: string; email: string; emailVerified: boolean; createdAt: string; isVip?: boolean; vipPlanName?: string | null }
+type UserItem = { id: number; username: string; email: string; emailVerified: boolean; createdAt: string; isVip?: boolean; isVipExpired?: boolean; vipPlanName?: string | null; vipExpireAt?: string | null; vipPurchasedAt?: string | null }
 
 export default function AdminUsersPage() {
   const { toast } = useToast()
@@ -116,7 +116,7 @@ export default function AdminUsersPage() {
                   <th className="py-2 pr-4">用户名</th>
                   <th className="py-2 pr-4">邮箱</th>
                   <th className="py-2 pr-4">已验证</th>
-                  <th className="py-2 pr-4">会员类型</th>
+                  <th className="py-2 pr-4">会员（类型/到期/购买）</th>
                   <th className="py-2 pr-4">创建时间</th>
                   <th className="py-2 pr-4">操作</th>
                 </tr>
@@ -147,9 +147,22 @@ export default function AdminUsersPage() {
                     )}
                   </td>
                   <td className="py-2 pr-4">
-                    {u.isVip ? (`VIP${u.vipPlanName ? `（${u.vipPlanName}）` : ''}`) : '普通用户'}
+                    {u.isVip ? (
+                      <div className="text-green-600">
+                        <span className="font-medium">VIP{u.vipPlanName ? `（${u.vipPlanName}）` : ''}</span>
+                        <div className="text-xs mt-0.5">到期: {u.vipExpireAt ? new Date(u.vipExpireAt).toLocaleDateString() : '-'}</div>
+                        <div className="text-xs text-muted-foreground">购买: {u.vipPurchasedAt ? new Date(u.vipPurchasedAt).toLocaleDateString() : '-'}</div>
+                      </div>
+                    ) : u.isVipExpired ? (
+                      <div className="text-gray-400 line-through">
+                        <span>VIP{u.vipPlanName ? `（${u.vipPlanName}）` : ''}</span>
+                        <div className="text-xs mt-0.5">已于 {u.vipExpireAt ? new Date(u.vipExpireAt).toLocaleDateString() : '-'} 到期</div>
+                      </div>
+                    ) : (
+                      <span className="text-muted-foreground">普通用户</span>
+                    )}
                   </td>
-                  <td className="py-2 pr-4">{new Date(u.createdAt).toLocaleString()}</td>
+                  <td className="py-2 pr-4">{new Date(u.createdAt).toLocaleDateString()}</td>
                     <td className="py-2 pr-4">
                       {editingId === u.id ? (
                         <div className="flex items-center gap-2">

@@ -13,14 +13,18 @@ export async function POST(req: Request) {
       const rows: any[] = await prisma.$queryRawUnsafe('SELECT avatar_url FROM users WHERE id = ? LIMIT 1', user.id)
       avatarUrl = rows?.[0]?.avatar_url ?? null
     } catch {}
+    // Check if VIP is expired
+    const now = new Date()
+    const isExpired = user.vipExpireAt && new Date(user.vipExpireAt) < now
+    const isVip = !!user.isVip && !isExpired
     const data = {
       id: user.id,
       username: user.username,
-      isVip: user.isVip,
-      vipExpireAt: user.vipExpireAt,
-      vipPlanId: user.vipPlanId,
-      vipPlanName: user.vipPlan?.name || null,
-      vipDailyLimit: user.vipPlan?.dailyDownloads ?? null,
+      isVip,
+      vipExpireAt: isExpired ? null : user.vipExpireAt,
+      vipPlanId: isExpired ? null : user.vipPlanId,
+      vipPlanName: isExpired ? null : (user.vipPlan?.name || null),
+      vipDailyLimit: isExpired ? null : (user.vipPlan?.dailyDownloads ?? null),
       avatarUrl,
     }
     return NextResponse.json({ success: true, data })

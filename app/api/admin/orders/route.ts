@@ -29,7 +29,32 @@ export async function GET(req: Request) {
   if (status) where.status = status
   const [total, rows] = await Promise.all([
     prisma.order.count({ where }),
-    prisma.order.findMany({ where, orderBy: [{ createdAt: 'desc' }], skip, take: size })
+    prisma.order.findMany({
+      where,
+      orderBy: [{ createdAt: 'desc' }],
+      skip,
+      take: size,
+      select: {
+        id: true,
+        userId: true,
+        outTradeNo: true,
+        tradeNo: true,
+        orderType: true,
+        productId: true,
+        productName: true,
+        amount: true,
+        status: true,
+        payChannel: true,
+        createdAt: true,
+        updatedAt: true,
+        paidAt: true,
+        user: { select: { username: true } }
+      }
+    })
   ])
-  return NextResponse.json({ success: true, data: rows, pagination: { page, size, total } })
+  const data = rows.map((o: any) => ({
+    ...o,
+    username: o.user?.username || '-'
+  }))
+  return NextResponse.json({ success: true, data, pagination: { page, size, total } })
 }

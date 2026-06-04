@@ -50,19 +50,32 @@ export async function GET(req: Request) {
         isVip: true,
         vipExpireAt: true,
         vipPlan: { select: { name: true } },
+        orders: {
+          where: { orderType: 'member', status: 'success' },
+          orderBy: { paidAt: 'desc' },
+          take: 1,
+          select: { paidAt: true, createdAt: true }
+        }
       },
     }),
   ])
-  const data = rows.map((u: any) => ({
-    id: u.id,
-    username: u.username,
-    email: u.email,
-    emailVerified: u.emailVerified,
-    createdAt: u.createdAt,
-    isVip: !!u.isVip,
-    vipExpireAt: u.vipExpireAt ?? null,
-    vipPlanName: (u.vipPlan?.name ?? null),
-  }))
+  const data = rows.map((u: any) => {
+    const now = new Date()
+    const isExpired = u.vipExpireAt && new Date(u.vipExpireAt) < now
+    const latestMemberOrder = u.orders?.[0]
+    return {
+      id: u.id,
+      username: u.username,
+      email: u.email,
+      emailVerified: u.emailVerified,
+      createdAt: u.createdAt,
+      isVip: !!u.isVip && !isExpired,
+      isVipExpired: !!u.isVip && isExpired,
+      vipExpireAt: u.vipExpireAt ?? null,
+      vipPlanName: (u.vipPlan?.name ?? null),
+      vipPurchasedAt: latestMemberOrder?.paidAt || latestMemberOrder?.createdAt || null,
+    }
+  })
   return NextResponse.json({ success: true, data, pagination: { page, size, total } })
 }
 

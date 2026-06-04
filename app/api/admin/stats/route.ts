@@ -33,7 +33,14 @@ export async function GET(req: Request) {
     const latestOrders = await prisma.order.findMany({
       orderBy: { createdAt: 'desc' },
       take: 6,
-      select: { outTradeNo: true, status: true, amount: true, productName: true, createdAt: true }
+      select: {
+        outTradeNo: true,
+        status: true,
+        amount: true,
+        productName: true,
+        createdAt: true,
+        user: { select: { username: true } }
+      }
     })
 
     const latestResources = await prisma.resource.findMany({

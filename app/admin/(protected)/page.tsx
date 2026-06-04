@@ -15,7 +15,7 @@ export default function AdminPage() {
     successOrders: number
     revenue: number
     totalDownloads: number
-    latestOrders: { outTradeNo: string; status: string; amount: any; productName: string; createdAt: string }[]
+    latestOrders: { outTradeNo: string; status: string; amount: any; productName: string; createdAt: string; user: { username: string } }[]
     latestResources: { id: number; title: string; price: any; createdAt: string }[]
   } | null>(null)
 
@@ -128,6 +128,7 @@ export default function AdminPage() {
                 <table className="min-w-full text-sm">
                   <thead>
                     <tr className="text-muted-foreground">
+                      <th className="text-left px-2 py-1">用户</th>
                       <th className="text-left px-2 py-1">订单号</th>
                       <th className="text-left px-2 py-1">商品</th>
                       <th className="text-left px-2 py-1">金额</th>
@@ -138,6 +139,7 @@ export default function AdminPage() {
                   <tbody>
                     {stats.latestOrders.map((o, idx) => (
                       <tr key={idx} className="border-t border-border">
+                        <td className="px-2 py-1 text-foreground">{o.user?.username || '-'}</td>
                         <td className="px-2 py-1 text-foreground">{o.outTradeNo}</td>
                         <td className="px-2 py-1 text-foreground">{o.productName}</td>
                         <td className="px-2 py-1 text-foreground">¥{Number(o.amount || 0).toFixed(2)}</td>

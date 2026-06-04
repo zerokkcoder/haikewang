@@ -6,6 +6,7 @@ import { useToast } from '@/components/Toast'
 type OrderRow = {
   id: number
   userId: number | null
+  username: string
   outTradeNo: string
   tradeNo?: string | null
   orderType: string
@@ -131,6 +132,7 @@ export default function AdminOrdersPage() {
               <thead>
                 <tr className="text-left text-muted-foreground">
                   <th className="py-2 pr-4">ID</th>
+                  <th className="py-2 pr-4">用户</th>
                   <th className="py-2 pr-4">订单号</th>
                   <th className="py-2 pr-4">流水号</th>
                   <th className="py-2 pr-4">类型</th>
@@ -148,6 +150,7 @@ export default function AdminOrdersPage() {
                 {list.map(o => (
                   <tr key={o.id} className="border-t">
                     <td className="py-2 pr-4">{o.id}</td>
+                    <td className="py-2 pr-4">{o.username}</td>
                     <td className="py-2 pr-4">{o.outTradeNo}</td>
                     <td className="py-2 pr-4">{o.tradeNo || '-'}</td>
                     <td className="py-2 pr-4">{orderTypeLabel(o.orderType)}</td>
