@@ -12,10 +12,18 @@ type SiteUser = { username: string; isVip?: boolean }
 type MeData = {
   id: number
   username: string
+  email: string
   isVip: boolean
   vipExpireAt: string | null
   vipPlanId: number | null
   vipPlanName: string | null
+}
+
+function maskEmail(email: string) {
+  const [localPart, domain] = email.split('@')
+  if (!localPart || !domain) return email || '—'
+  const visible = localPart.slice(0, 3)
+  return `${visible}****@${domain}`
 }
 
 export default function ProfilePage() {
@@ -349,7 +357,7 @@ export default function ProfilePage() {
                     <div className="text-destructive">{error}</div>
                   ) : me ? (
                     <>
-                      <div>邮箱：<span className="text-foreground">（隐私保护，未显示）</span></div>
+                      <div>邮箱：<span className="text-foreground">{maskEmail(me.email)}</span></div>
                       <div>VIP：<span className="text-foreground">{me.isVip ? '已开通' : '未开通'}</span></div>
                       {me.isVip && (
                         <div>会员计划：<span className="text-foreground">{me.vipPlanName || '—'}</span></div>
@@ -362,7 +370,7 @@ export default function ProfilePage() {
                 </div>
                 <div className="mt-4 flex gap-2">
                   <Link href="/vip" className="rounded-full bg-yellow-400 text-black px-3 py-1 text-xs md:text-sm hover:opacity-90">升级VIP</Link>
-                  <Link href="/forgot-password" className="text-sm text-primary hover:underline">找回密码</Link>
+                  <Link href="/forgot-password" className="inline-flex items-center rounded-full border border-violet-200 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 transition-colors hover:bg-violet-100 md:text-sm">找回密码</Link>
                 </div>
               </div>
             )}

@@ -20,6 +20,7 @@ export async function POST(req: Request) {
     const data = {
       id: user.id,
       username: user.username,
+      email: user.email,
       isVip,
       vipExpireAt: isExpired ? null : user.vipExpireAt,
       vipPlanId: isExpired ? null : user.vipPlanId,

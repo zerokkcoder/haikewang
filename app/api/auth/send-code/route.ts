@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import prisma from '@/lib/prisma'
-import nodemailer from 'nodemailer'
+import { canSendEmail, sendSmtpEmail } from '@/lib/email'
 
 function generateCode(len = 6) {
   let s = ''
@@ -8,24 +8,7 @@ function generateCode(len = 6) {
   return s
 }
 
-function canSendEmail() {
-  return !!(
-    process.env.SMTP_HOST &&
-    process.env.SMTP_PORT &&
-    (process.env.SMTP_USER || process.env.SMTP_FROM) &&
-    (process.env.SMTP_PASS || process.env.SMTP_SECURE === 'false')
-  )
-}
-
 async function sendEmailCode(to: string, code: string) {
-  const host = process.env.SMTP_HOST as string
-  const port = Number(process.env.SMTP_PORT ?? 587)
-  const secure = (process.env.SMTP_SECURE ?? 'false') === 'true' || port === 465
-  const user = (process.env.SMTP_USER as string | undefined)
-  const pass = (process.env.SMTP_PASS as string | undefined) ?? (process.env.SMTP_PASSWORD as string | undefined)
-  const from = (process.env.SMTP_FROM as string | undefined) ?? user ?? 'no-reply@example.com'
-
-  const transporter = nodemailer.createTransport({ host, port, secure, auth: user && pass ? { user, pass } : undefined })
   const subject = '您的注册验证码'
   const html = `
     <p>您好！</p>
@@ -33,7 +16,7 @@ async function sendEmailCode(to: string, code: string) {
     <p>该验证码在 5 分钟内有效，请尽快完成验证。</p>
     <p>如非本人操作，请忽略此邮件。</p>
   `
-  await transporter.sendMail({ from, to, subject, html, text: `您的注册验证码为：${code}（5分钟内有效）` })
+  await sendSmtpEmail({ to, subject, html, text: `您的注册验证码为：${code}（5分钟内有效）` })
 }
 
 export async function POST(req: Request) {

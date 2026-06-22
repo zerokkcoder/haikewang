@@ -45,3 +45,4 @@ public/uploads/*
 
 storage/uploads/*
 .trae
+.npm-cache
