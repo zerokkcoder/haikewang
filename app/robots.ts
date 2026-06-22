@@ -1,8 +1,18 @@
 import { MetadataRoute } from 'next'
 
+// 规范化 URL
+function normalizeUrl(url: string): string {
+  return url.replace(/\/$/, '')
+}
+
 export default function robots(): MetadataRoute.Robots {
-  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.xuehaoke.top'
-  
+  // 统一使用 www 版本
+  let baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://www.xuehaoke.top'
+  if (!baseUrl.includes('www.') && !baseUrl.includes('localhost')) {
+    baseUrl = baseUrl.replace('https://', 'https://www.')
+  }
+  baseUrl = normalizeUrl(baseUrl)
+
   return {
     rules: [
       {

@@ -168,27 +168,33 @@ export default async function ResourceDetailPage({ params }: { params: Promise<{
   // For now we skip server-side view counting or rely on client.
 
   // 7. Generate Course Schema for Rich Snippets
+  const priceValue = Number(resourceRaw.price) > 0 ? Number(resourceRaw.price).toFixed(2) : "0"
   const courseSchema = {
     "@context": "https://schema.org",
     "@type": "Course",
     "name": resourceRaw.title,
-    "description": resourceRaw.content ? resourceRaw.content.replace(/[#*`\[\]]/g, '').replace(/\n+/g, ' ').trim().slice(0, 500) : `${resourceRaw.title} 视频教程`,
+    "description": resourceRaw.content
+      ? resourceRaw.content.replace(/[#*`\[\]]/g, '').replace(/\n+/g, ' ').trim().slice(0, 500)
+      : `${resourceRaw.title} 视频教程`,
+    "url": `https://www.xuehaoke.top/resource/${resourceRaw.id}`,
     "image": resourceRaw.cover || undefined,
     "provider": {
       "@type": "Organization",
       "name": "学好课",
-      "url": "https://xuehaoke.top"
+      "url": "https://www.xuehaoke.top"
     },
     "aggregateRating": resourceRaw.downloadCount > 10 ? {
       "@type": "AggregateRating",
       "ratingValue": "4.5",
-      "reviewCount": resourceRaw.downloadCount.toString()
+      "ratingCount": resourceRaw.downloadCount.toString()
     } : undefined,
     "offers": {
       "@type": "Offer",
-      "price": Number(resourceRaw.price) > 0 ? Number(resourceRaw.price).toFixed(2) : "0",
+      "price": priceValue,
       "priceCurrency": "CNY",
-      "availability": Number(resourceRaw.price) > 0 ? "https://schema.org/PreOrder" : "https://schema.org/FreeBoolean"
+      "availability": Number(resourceRaw.price) > 0
+        ? "https://schema.org/PreOrder"
+        : "https://schema.org/InStock"
     },
     "about": {
       "@type": "Thing",
